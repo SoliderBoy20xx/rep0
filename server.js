@@ -5,7 +5,7 @@ const { Pool } = require('pg');
 const { router: authRoutes } = require('./routes/authRoutes'); // Use the `router` object from the import
 const { router: userRoutes } = require('./routes/userRoutes'); // Use the `router` object from the import
 require('dotenv').config();
-
+ 
 
 const app = express();
 const PORT = process.env.PORT || 3000;

@@ -103,21 +103,26 @@ router.post('/login', async (req, res) => {
 
         // Check if user exists and password is correct
         // If successful, generate authentication token
-        if (user && await bcrypt.compare(password, user.password) && user.status === 'approved') {
-            // Update last login date
-            await updateLastLoginDate(user.user_id);
-            
-            // Generate authentication token
-            const authToken = generateAuthToken(user);
-            
-          
-            
-            console.log('logged in succ');
-            return res.status(200).json({ authToken });
-            console.log('logged in succ');
+        if (user) {
+            const passwordMatch = await bcrypt.compare(password, user.password);
+            if (passwordMatch) {
+                if (user.status === 'approved') {
+                    // Generate authentication token
+                    const authToken = generateAuthToken(user);
+                    return res.status(200).json({ authToken });
+                } else {
+                    // User exists but is not approved
+                    return res.status(401).json({ error: 'User is not approved' });
+                }
+            } else {
+                // Password does not match
+                return res.status(401).json({ error: 'Invalid credentials' });
+            }
         } else {
+            // User does not exist
             return res.status(401).json({ error: 'Invalid credentials' });
         }
+        
     } catch (error) {
         console.error('Error logging in:', error);
         res.status(500).json({ error: 'Internal server error' });
