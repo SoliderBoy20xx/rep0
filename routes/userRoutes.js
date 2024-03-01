@@ -132,5 +132,68 @@ router.get('/test-authentication', authenticateUser, (req, res) => {
     res.json({ message: 'Authentication successful', user: req.user });
 });
 
+// GET route to retrieve users with unapproved status
+router.get('/users/unapproved', authenticateUser, authorizeAdmin, async (req, res) => {
+    try {
+        console.log('Retrieving users with unapproved status...');
+        
+        // Query database to retrieve users with unapproved status
+        const query = {
+            text: 'SELECT * FROM Users WHERE status = $1',
+            values: ['unapproved']
+        };
+        const { rows } = await pool.query(query);
+        
+        console.log('Users with unapproved status:', rows);
+        
+        res.json({ users: rows });
+    } catch (error) {
+        console.error('Error retrieving users with unapproved status:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// DELETE route to delete a user by ID
+router.delete('/users/:userId', authenticateUser, authorizeAdmin, async (req, res) => {
+    const userId = req.params.userId;
+
+    try {
+        console.log(`Deleting user with ID ${userId}...`);
+
+        // Delete user from the database
+        const query = {
+            text: 'DELETE FROM Users WHERE user_id = $1',
+            values: [userId]
+        };
+        const result = await pool.query(query);
+
+        console.log(`User with ID ${userId} deleted. Affected rows: ${result.rowCount}`);
+
+        res.json({ message: `User with ID ${userId} deleted successfully` });
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// GET route to retrieve contents of the main table
+router.get('/main', authenticateUser, async (req, res) => {
+    try {
+        console.log('Retrieving contents of the main table...');
+
+        // Retrieve contents of the main table from the database
+        const query = 'SELECT * FROM main';
+        const { rows } = await pool.query(query);
+
+        console.log(`Retrieved ${rows.length} rows from the main table`);
+
+        // Send the retrieved data as JSON in the response
+        res.json({ data: rows });
+    } catch (error) {
+        console.error('Error retrieving data from the main table:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 
 module.exports = { router, authenticateUser, authorizeAdmin };
