@@ -140,7 +140,7 @@ router.get('/users/unapproved', authenticateUser, authorizeAdmin, async (req, re
         // Query database to retrieve users with unapproved status
         const query = {
             text: 'SELECT * FROM Users WHERE status = $1',
-            values: ['unapproved']
+            values: ['not approved']
         };
         const { rows } = await pool.query(query);
         
