@@ -152,19 +152,21 @@ router.get('/users/unapproved', authenticateUser, authorizeAdmin, async (req, re
         res.status(500).json({ error: 'Internal server error' });
     }
 });
-// GET route to retrieve users with approved status
+// GET route to retrieve users all
 router.get('/users/all', authenticateUser, authorizeAdmin, async (req, res) => {
     try {
         console.log('Retrieving users...');
         
-        // Query database to retrieve users with unapproved status
+        // Query database to retrieve all users with role 'user'
         const query = {
-            text: 'SELECT * FROM Users'
+            text: 'SELECT * FROM Users WHERE role = $1',
+            values: ['user'],
         };
         const { rows } = await pool.query(query);
         
         console.log('Users:', rows);
         
+        // Send the list of users as a JSON response
         res.json({ users: rows });
     } catch (error) {
         console.error('Error retrieving users:', error);
