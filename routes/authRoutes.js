@@ -109,7 +109,7 @@ router.post('/login', async (req, res) => {
                 if (user.status === 'approved') {
                     // Generate authentication token
                     const authToken = generateAuthToken(user);
-                    return res.status(200).json({ authToken });
+                    return res.status(200).json({ authToken, role: user.role });
                 } else {
                     // User exists but is not approved
                     return res.status(401).json({ error: 'User is not approved' });
