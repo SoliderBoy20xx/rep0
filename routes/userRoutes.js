@@ -152,6 +152,25 @@ router.get('/users/unapproved', authenticateUser, authorizeAdmin, async (req, re
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+// GET route to retrieve users with approved status
+router.get('/users/all', authenticateUser, authorizeAdmin, async (req, res) => {
+    try {
+        console.log('Retrieving users...');
+        
+        // Query database to retrieve users with unapproved status
+        const query = {
+            text: 'SELECT * FROM Users'
+        };
+        const { rows } = await pool.query(query);
+        
+        console.log('Users:', rows);
+        
+        res.json({ users: rows });
+    } catch (error) {
+        console.error('Error retrieving users:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
 
 // DELETE route to delete a user by ID
 router.delete('/users/:userId', authenticateUser, authorizeAdmin, async (req, res) => {
