@@ -333,28 +333,28 @@ router.post('/storeProduct', authenticateUser, async (req, res) => {
         }
         const lockerId = lockerResult.rows[0].locker_id;
 
-        // Check if the sample exists
-        const sampleQuery = {
+        // Get the sample_id based on the sampleBarcode
+        const sampleIdQuery = {
             text: 'SELECT sample_id FROM Samples WHERE sample_barcode = $1',
             values: [sampleBarcode],
         };
-        const sampleResult = await pool.query(sampleQuery);
-        if (sampleResult.rowCount === 0) {
+        const sampleIdResult = await pool.query(sampleIdQuery);
+        if (sampleIdResult.rowCount === 0) {
             return res.status(404).json({ error: 'Sample not found' });
         }
-        const sampleId = sampleResult.rows[0].sample_id;
+        const sampleId = sampleIdResult.rows[0].sample_id;
 
         // Calculate the quantity of the sample in this locker
         const quantityInThisLockerQuery = {
-            text: 'SELECT COALESCE(SUM(quantity), 0) + $1 AS quantity_in_this_locker FROM StorageTransactions WHERE sample_id = $2 AND locker_id = $3',
+            text: 'SELECT COALESCE(SUM(quantity_in_this_locker), 0) + $1 AS quantity_in_this_locker FROM StorageTransactions WHERE sample_id = $2 AND locker_id = $3',
             values: [quantity, sampleId, lockerId],
         };
         const quantityInThisLockerResult = await pool.query(quantityInThisLockerQuery);
         const quantityInThisLocker = quantityInThisLockerResult.rows[0].quantity_in_this_locker;
-
+        
         // Calculate the total quantity of the sample across all lockers, including the quantity of the new product
         const totalQuantityQuery = {
-            text: 'SELECT COALESCE(SUM(quantity), 0) + $1 AS total_quantity FROM StorageTransactions WHERE sample_id = $2',
+            text: 'SELECT COALESCE(SUM(quantity_in_this_locker), 0) + $1 AS total_quantity FROM StorageTransactions WHERE sample_id = $2',
             values: [quantity, sampleId],
         };
         const totalQuantityResult = await pool.query(totalQuantityQuery);
@@ -375,10 +375,17 @@ router.post('/storeProduct', authenticateUser, async (req, res) => {
         };        
         await pool.query(insertQuery);
 
-         // Update total_quantity in all lockers for the sample
-         const updateTotalQuantityQuery = {
-            text: 'UPDATE StorageTransactions SET total_quantity = $1 WHERE sample_id = $2 AND locker_id != $3',
-            values: [totalQuantity, sampleId, lockerId],
+        // Update quantity_in_this_locker for all products with the same barcode in this locker
+        const updateQuantityInThisLockerQuery = {
+            text: 'UPDATE StorageTransactions SET quantity_in_this_locker = COALESCE((SELECT SUM(quantity_in_this_locker) FROM StorageTransactions WHERE sample_barcode = $1 AND locker_id = $2), 0) WHERE sample_barcode = $1 AND locker_id = $2',
+            values: [sampleBarcode, lockerId],
+        };
+        await pool.query(updateQuantityInThisLockerQuery);
+
+        // Update total_quantity for all products with the same barcode across all lockers
+        const updateTotalQuantityQuery = {
+            text: 'UPDATE StorageTransactions SET total_quantity = COALESCE((SELECT SUM(quantity_in_this_locker) FROM StorageTransactions WHERE sample_barcode = $1), 0) WHERE sample_barcode = $1',
+            values: [sampleBarcode],
         };
         await pool.query(updateTotalQuantityQuery);
 
@@ -388,6 +395,7 @@ router.post('/storeProduct', authenticateUser, async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
 /////////////////////////// danger 2 /////////////////////
 
 // Route to handle product removal
