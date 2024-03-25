@@ -344,6 +344,8 @@ router.post('/storeProduct', authenticateUser, async (req, res) => {
         }
         const sampleId = sampleIdResult.rows[0].sample_id;
 
+
+
         // Calculate the quantity of the sample in this locker
         const quantityInThisLockerQuery = {
             text: 'SELECT COALESCE(SUM(quantity_in_this_locker), 0) + $1 AS quantity_in_this_locker FROM StorageTransactions WHERE sample_id = $2 AND locker_id = $3',
@@ -361,10 +363,10 @@ router.post('/storeProduct', authenticateUser, async (req, res) => {
         const totalQuantity = totalQuantityResult.rows[0].total_quantity;
 
         // Calculate the sequence number for the new transaction
-        const sequenceNumberQuery = {
+       const sequenceNumberQuery = {
             text: 'SELECT COALESCE(MAX(sequence_number), 0) + 1 AS sequence_number FROM StorageTransactions WHERE locker_id = $1',
             values: [lockerId],
-        };
+};
         const sequenceNumberResult = await pool.query(sequenceNumberQuery);
         const sequenceNumber = sequenceNumberResult.rows[0].sequence_number;
 
@@ -377,14 +379,14 @@ router.post('/storeProduct', authenticateUser, async (req, res) => {
 
         // Update quantity_in_this_locker for all products with the same barcode in this locker
         const updateQuantityInThisLockerQuery = {
-            text: 'UPDATE StorageTransactions SET quantity_in_this_locker = COALESCE((SELECT SUM(quantity_in_this_locker) FROM StorageTransactions WHERE sample_barcode = $1 AND locker_id = $2), 0) WHERE sample_barcode = $1 AND locker_id = $2',
+            text: 'UPDATE StorageTransactions SET quantity_in_this_locker = (SELECT COALESCE(MAX(quantity_in_this_locker), 0) FROM StorageTransactions WHERE sample_barcode = $1 AND locker_id = $2) WHERE sample_barcode = $1 AND locker_id = $2',
             values: [sampleBarcode, lockerId],
         };
         await pool.query(updateQuantityInThisLockerQuery);
 
         // Update total_quantity for all products with the same barcode across all lockers
         const updateTotalQuantityQuery = {
-            text: 'UPDATE StorageTransactions SET total_quantity = COALESCE((SELECT SUM(quantity_in_this_locker) FROM StorageTransactions WHERE sample_barcode = $1), 0) WHERE sample_barcode = $1',
+            text: 'UPDATE StorageTransactions SET total_quantity = (SELECT COALESCE(SUM(max_quantity), 0) FROM (SELECT MAX(quantity_in_this_locker) AS max_quantity FROM StorageTransactions WHERE sample_barcode = $1 GROUP BY locker_id) AS max_quantities) WHERE sample_barcode = $1',
             values: [sampleBarcode],
         };
         await pool.query(updateTotalQuantityQuery);
