@@ -372,7 +372,7 @@ router.post('/storeProduct', authenticateUser, async (req, res) => {
 
         // Insert the new transaction
         const insertQuery = {
-            text: 'INSERT INTO StorageTransactions (locker_id, locker_barcode, sample_id, sample_barcode, Entered_quantity, quantity_in_this_locker, total_quantity, sequence_number) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+            text: 'INSERT INTO StorageTransactions (locker_id, locker_barcode, sample_id, sample_barcode, quantity_in_this_sequence, quantity_in_this_locker, total_quantity, sequence_number) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
             values: [lockerId, lockerBarcode, sampleId, sampleBarcode, quantity, quantityInThisLocker, totalQuantity, sequenceNumber],
         };        
         await pool.query(insertQuery);
