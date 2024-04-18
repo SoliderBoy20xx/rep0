@@ -468,7 +468,7 @@ router.post('/removeProduct', authenticateUser, async (req, res) => {
 
 /////////////////////////// danger 2 ///////////////////// TEMPOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 // Retrieve Possible Sequences Route
-app.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', async (req, res) => {
+app.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authenticateUser, async (req, res) => {
     const { lockerBarcode, productBarcode, quantity } = req.params;
   
     try {
