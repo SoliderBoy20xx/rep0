@@ -401,74 +401,12 @@ router.post('/storeProduct', authenticateUser, async (req, res) => {
 /////////////////////////// danger 2 ///////////////////// TEMPOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
 // Route to handle product removal
-router.post('/removeProduct', authenticateUser, async (req, res) => {
-    const { lockerBarcode, sampleBarcode, quantity } = req.body;
 
-    try {
-        // Check if the locker exists
-        const lockerQuery = {
-            text: 'SELECT locker_id FROM Lockers WHERE locker_barcode = $1',
-            values: [lockerBarcode],
-        };
-        const lockerResult = await pool.query(lockerQuery);
-        if (lockerResult.rowCount === 0) {
-            return res.status(404).json({ error: 'Locker not found' });
-        }
-        const lockerId = lockerResult.rows[0].locker_id;
-
-        // Check if the sample exists
-        const sampleQuery = {
-            text: 'SELECT sample_id FROM Samples WHERE sample_barcode = $1',
-            values: [sampleBarcode],
-        };
-        const sampleResult = await pool.query(sampleQuery);
-        if (sampleResult.rowCount === 0) {
-            return res.status(404).json({ error: 'Sample not found' });
-        }
-        const sampleId = sampleResult.rows[0].sample_id;
-
-        // Check if the quantity exceeds the quantity in this locker
-        const quantityInThisLockerQuery = {
-            text: 'SELECT COALESCE(MAX(quantity_in_this_locker), 0) AS quantity_in_this_locker FROM StorageTransactions WHERE sample_id = $1 AND locker_id = $2',
-            values: [sampleId, lockerId],
-        };
-        const quantityInThisLockerResult = await pool.query(quantityInThisLockerQuery);
-        const quantityInThisLocker = quantityInThisLockerResult.rows[0].quantity_in_this_locker;
-
-        if (quantity > quantityInThisLocker) {
-            // Quantity exceeds the available quantity in this locker
-            // Get the available quantity in other lockers
-            const otherLockersQuery = {
-                text: 'SELECT DISTINCT ON (locker_id) locker_barcode, quantity_in_this_locker FROM StorageTransactions WHERE sample_id = $1 AND locker_id != $2',
-                values: [sampleId, lockerId],
-            };
-            const otherLockersResult = await pool.query(otherLockersQuery);
-            const otherLockers = otherLockersResult.rows;
-
-            return res.status(400).json({
-                error: 'Exceeded quantity in this locker',
-                availableQuantityInOtherLockers: otherLockers
-            });
-        }
-
-        // Update quantity_in_this_locker for every product with the same barcode in this locker
-        const updateQuantityQuery = {
-            text: 'UPDATE StorageTransactions SET quantity_in_this_locker = GREATEST(0, COALESCE((SELECT MAX(quantity_in_this_locker) FROM StorageTransactions WHERE sample_id = $1 AND locker_id = $2) - $3, 0)) WHERE sample_id = $1 AND locker_id = $2',
-            values: [sampleId, lockerId, quantity],
-        };
-        await pool.query(updateQuantityQuery);
-
-        res.status(200).json({ message: 'Product removed successfully' });
-    } catch (error) {
-        console.error('Error removing product:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
 /////////////////////////// danger 2 ///////////////////// TEMPOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
 /////////////////////////// danger 2 ///////////////////// TEMPOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 // Retrieve Possible Sequences Route
-app.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authenticateUser, async (req, res) => {
+router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authenticateUser, async (req, res) => {
     const { lockerBarcode, productBarcode, quantity } = req.params;
   
     try {
