@@ -398,7 +398,7 @@ router.post('/storeProduct', authenticateUser, async (req, res) => {
     }
 });
 
-/////////////////////////// danger 2 /////////////////////
+/////////////////////////// danger 2 ///////////////////// TEMPOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
 // Route to handle product removal
 router.post('/removeProduct', authenticateUser, async (req, res) => {
@@ -464,6 +464,63 @@ router.post('/removeProduct', authenticateUser, async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+/////////////////////////// danger 2 ///////////////////// TEMPOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
+
+/////////////////////////// danger 2 ///////////////////// TEMPOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
+// Retrieve Possible Sequences Route
+app.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', async (req, res) => {
+    const { lockerBarcode, productBarcode, quantity } = req.params;
+  
+    try {
+      // Check if the locker exists
+      const lockerQuery = {
+        text: 'SELECT locker_id FROM Lockers WHERE locker_barcode = $1',
+        values: [lockerBarcode],
+      };
+      const lockerResult = await pool.query(lockerQuery);
+      if (lockerResult.rowCount === 0) {
+        return res.status(404).json({ error: 'Locker not found' });
+      }
+      const lockerId = lockerResult.rows[0].locker_id;
+  
+      // Check if the sample exists
+      const sampleQuery = {
+        text: 'SELECT sample_id FROM Samples WHERE sample_barcode = $1',
+        values: [productBarcode],
+      };
+      const sampleResult = await pool.query(sampleQuery);
+      if (sampleResult.rowCount === 0) {
+        return res.status(404).json({ error: 'Sample not found' });
+      }
+      const sampleId = sampleResult.rows[0].sample_id;
+  
+      // Check if the quantity exceeds the quantity in this locker
+      const quantityInThisLockerQuery = {
+        text: 'SELECT COALESCE(MAX(quantity_in_this_locker), 0) AS quantity_in_this_locker FROM StorageTransactions WHERE sample_id = $1 AND locker_id = $2',
+        values: [sampleId, lockerId],
+      };
+      const quantityInThisLockerResult = await pool.query(quantityInThisLockerQuery);
+      const quantityInThisLocker = quantityInThisLockerResult.rows[0].quantity_in_this_locker;
+  
+      // If the requested quantity exceeds the quantity in this locker, return an error response
+      if (parseInt(quantity) > quantityInThisLocker) {
+        return res.status(400).json({ error: 'Requested quantity exceeds the quantity in this locker' });
+      }
+  
+      // Query to retrieve possible sequences for the given locker and product from the database
+      const result = await pool.query('SELECT sequence_number, quantity_in_this_sequence FROM StorageTransactions WHERE locker_barcode = $1 AND sample_barcode = $2', [lockerBarcode, productBarcode]);
+      const sequences = result.rows;
+      res.json({ sequences });
+    } catch (error) {
+      console.error('Error retrieving possible sequences:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+  
+
+
+
+
 
 
 module.exports = { router, authenticateUser, authorizeAdmin }; 
