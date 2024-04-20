@@ -454,6 +454,8 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
       res.status(500).json({ error: 'Internal server error' });
     }
   });
+
+
   
 
 
