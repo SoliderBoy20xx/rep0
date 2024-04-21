@@ -7,7 +7,7 @@ const { pool } = require('../db');
 
 //const generateSecretKey = require('./utils');
 const { secretKey } = require('./authRoutes');
-console.log("Secret key for token err verf xxx:", secretKey);
+//console.log("Secret key for token err verf xxx:", secretKey);
 
 
 
@@ -456,7 +456,37 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
   });
 
 
+  // Unstock route
+  router.post('/unstock', (req, res) => {
+    // Data store
+    let sequences = [];
   
+    const selectedSequences = req.body.selectedSequences;
+    let quantityToRemove = req.body.quantityToRemove;
+  
+    if (!selectedSequences || !quantityToRemove) {
+      return res.status(400).json({ message: 'Bad request' });
+    }
+  
+    // Calculate the remaining quantity for each sequence
+    for (const sequence of sequences) {
+      if (selectedSequences.includes(sequence.sequence_number)) {
+        sequence.quantity_in_this_sequence -= quantityToRemove;
+        // If the remaining quantity is negative, add it back to quantityToRemove
+        if (sequence.quantity_in_this_sequence < 0) {
+          quantityToRemove = Math.abs(sequence.quantity_in_this_sequence);
+          sequence.quantity_in_this_sequence = 0;
+        } else {
+          quantityToRemove = 0;
+        }
+      }
+    }
+  
+    // Remove the sequence if remaining quantity is 0
+    sequences = sequences.filter(sequence => sequence.quantity_in_this_sequence > 0);
+  
+    return res.status(200).json({ message: 'Product unstocked successfully' });
+});
 
 
 
