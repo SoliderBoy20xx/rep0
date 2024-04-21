@@ -511,14 +511,7 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
         }
       }
   
-      // Update the quantity_in_this_locker
-      /*const lockerQuantityResult = await client.query(
-        'SELECT quantity_in_this_locker FROM StorageTransactions WHERE locker_barcode = $1 AND sample_barcode = $2',
-        [lockerBarcode, productBarcode]
-      );
-      const lockerQuantity = lockerQuantityResult.rows[0].quantity_in_this_locker - quantityToRemove;
-      await client.query('UPDATE StorageTransactions SET quantity_in_this_locker = $1 WHERE locker_barcode = $2 AND sample_barcode = $3', [lockerQuantity, lockerBarcode, productBarcode]);
-       */
+
       await client.query('COMMIT');
       return res.status(200).json({ message: 'Product unstocked successfully' });
     } catch (error) {
