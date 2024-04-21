@@ -457,63 +457,63 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
 
   router.post('/unstock', authenticateUser, async (req, res) => {
     // Data store
-  let sequences = [];
-  let quantityToRemove = req.body.quantityToRemove;
-  const lockerBarcode = req.body.lockerBarcode;
-  const productBarcode = req.body.productBarcode;
-
-  const selectedSequences = req.body.selectedSequences;
-
-  // Check for bad requests
-  if (!selectedSequences || !quantityToRemove || !lockerBarcode || !productBarcode) {
-    return res.status(400).json({ message: 'Bad request' });
-  }
-
-  // Database operations
-  try {
-    await client.query('BEGIN');
-
-    for (const sequence of sequences) {
-      if (selectedSequences.includes(sequence.sequence_number)) {
-        sequence.quantity_in_this_sequence -= quantityToRemove;
-        // If the remaining quantity is negative, add it back to quantityToRemove
-        if (sequence.quantity_in_this_sequence < 0) {
-          quantityToRemove -= Math.abs(sequence.quantity_in_this_sequence);
-          sequence.quantity_in_this_sequence = 0;
-        } else {
-          quantityToRemove = 0; // Reset quantityToRemove
+    let sequences = [];
+    let quantityToRemove = req.body.quantityToRemove;
+    const lockerBarcode = req.body.lockerBarcode;
+    const productBarcode = req.body.productBarcode;
+  
+    const selectedSequences = req.body.selectedSequences;
+  
+    // Check for bad requests
+    if (!selectedSequences || !quantityToRemove || !lockerBarcode || !productBarcode) {
+      return res.status(400).json({ message: 'Bad request' });
+    }
+  
+    // Database operations
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+  
+      for (const sequence of sequences) {
+        if (selectedSequences.includes(sequence.sequence_number)) {
+          sequence.quantity_in_this_sequence -= quantityToRemove;
+          // If the remaining quantity is negative, add it back to quantityToRemove
+          if (sequence.quantity_in_this_sequence < 0) {
+            quantityToRemove -= Math.abs(sequence.quantity_in_this_sequence);
+            sequence.quantity_in_this_sequence = 0;
+          } else {
+            quantityToRemove = 0; // Reset quantityToRemove
+            break; // Stop looping if the quantityToRemove is 0
+          }
         }
       }
-    }
-
-    for (const sequence of sequences) {
-      const { sequence_number: sequenceNumber, quantity_in_this_sequence: remainingQuantity } = sequence;
-
-      if (remainingQuantity === 0) {
-        // Remove the sequence if remaining quantity is 0
-        await client.query('DELETE FROM StorageTransactions WHERE sequence_number = $1', [sequenceNumber]);
-      } else {
-        // Update the remaining quantity for the sequence
-        await client.query('UPDATE StorageTransactions SET quantity_in_this_sequence = $1 WHERE sequence_number = $2', [remainingQuantity, sequenceNumber]);
+  
+      for (const sequence of sequences) {
+        const { sequence_number: sequenceNumber, quantity_in_this_sequence: remainingQuantity } = sequence;
+  
+        if (remainingQuantity === 0) {
+          // Remove the sequence if remaining quantity is 0
+          await client.query('DELETE FROM StorageTransactions WHERE sequence_number = $1', [sequenceNumber]);
+        } else {
+          // Update the remaining quantity for the sequence
+          await client.query('UPDATE StorageTransactions SET quantity_in_this_sequence = $1 WHERE sequence_number = $2', [remainingQuantity, sequenceNumber]);
+        }
       }
-
-      if (quantityToRemove === 0) {
-        break; // Stop looping if the quantityToRemove is 0
-      }
+  
+      // Update quantity_in_this_locker for the locker and product
+      await client.query('UPDATE StorageTransactions SET quantity_in_this_locker = quantity_in_this_locker - $1 WHERE locker_barcode = $2 AND product_barcode = $3', [req.body.quantityToRemove, lockerBarcode, productBarcode]);
+  
+      await client.query('COMMIT');
+      return res.status(200).json({ message: 'Product unstocked successfully' });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('Error during unstocking:', error);
+      return res.status(500).json({ message: 'Internal server error' });
+    } finally {
+      client.release();
     }
-
-   
-    await client.query('COMMIT');
-    return res.status(200).json({ message: 'Product unstocked successfully' });
-  } catch (error) {
-    await client.query('ROLLBACK');
-    console.error('Error during unstocking:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  } finally {
-    client.release();
-  }
-});
-
+  });
+  
 
   
 
