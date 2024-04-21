@@ -482,7 +482,6 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
       );
       sequences = sequenceResult.rows;
   
-      // Calculate the remaining quantity for each sequence
       for (const sequence of sequences) {
         if (selectedSequences.includes(sequence.sequence_number)) {
           sequence.quantity_in_this_sequence -= quantityToRemove;
@@ -490,10 +489,7 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
           if (sequence.quantity_in_this_sequence < 0) {
             quantityToRemove = Math.abs(sequence.quantity_in_this_sequence);
             sequence.quantity_in_this_sequence = 0;
-          } else {
-            sequence.quantity_in_this_sequence -= quantityToRemove;
-            quantityToRemove = 0;
-          }
+          } 
         }
       }
   
