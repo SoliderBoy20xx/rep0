@@ -456,22 +456,25 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
   });
 
 
-  // Unstock route
-  router.post('/unstock',authenticateUser, async (req, res) => {
+  router.post('/unstock', authenticateUser, async (req, res) => {
     // Data store
     let sequences = [];
   
     const selectedSequences = req.body.selectedSequences;
+    const lockerBarcode = req.body.lockerBarcode;
     let quantityToRemove = req.body.quantityToRemove;
   
     // Check for bad requests
-    if (!selectedSequences || !quantityToRemove) {
+    if (!selectedSequences || !quantityToRemove || !lockerBarcode) {
       return res.status(400).json({ message: 'Bad request' });
     }
   
+    // Parse selected sequences to ensure it's an array of integers
+    const parsedSequences = selectedSequences.map(Number);
+  
     // Calculate the remaining quantity for each sequence
     for (const sequence of sequences) {
-      if (selectedSequences.includes(sequence.sequence_number)) {
+      if (parsedSequences.includes(sequence.sequence_number)) {
         sequence.quantity_in_this_sequence -= quantityToRemove;
         // If the remaining quantity is negative, add it back to quantityToRemove
         if (sequence.quantity_in_this_sequence < 0) {
@@ -484,9 +487,8 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
     }
   
     // Database operations
-    
     try {
-      await client.query('BEGIN');
+      await pool.query('BEGIN');
   
       for (const sequence of sequences) {
         const { sequence_number: sequenceNumber, quantity_in_this_sequence: remainingQuantity } = sequence;
@@ -495,23 +497,22 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
           remainingQuantity = 0; // Set the remaining quantity to 0
         } else if (remainingQuantity === 0) {
           // Remove the sequence if remaining quantity is 0
-          await client.query('DELETE FROM StorageTransactions WHERE sequence_number = $1', [sequenceNumber]);
+          await pool.query('DELETE FROM StorageTransactions WHERE sequence_number = $1 AND locker_barcode = $2', [sequenceNumber, lockerBarcode]);
         } else {
           // Update the remaining quantity for the sequence
-          await client.query('UPDATE StorageTransactions SET quantity_in_this_sequence = $1 WHERE sequence_number = $2', [remainingQuantity, sequenceNumber]);
+          await pool.query('UPDATE StorageTransactions SET quantity_in_this_sequence = $1 WHERE sequence_number = $2 AND locker_barcode = $3', [remainingQuantity, sequenceNumber, lockerBarcode]);
         }
       }
   
-      await client.query('COMMIT');
+      await pool.query('COMMIT');
       return res.status(200).json({ message: 'Product unstocked successfully' });
     } catch (error) {
-      await client.query('ROLLBACK');
+      await pool.query('ROLLBACK');
       console.error('Error during unstocking:', error);
       return res.status(500).json({ message: 'Internal server error' });
-    } finally {
-      client.release();
     }
-  });
+});
+
   
 
 
