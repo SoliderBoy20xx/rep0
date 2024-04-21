@@ -528,9 +528,9 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
         return res.status(500).json({ message: 'Internal server error' });
       }
     } finally {
-      if (client) {
+      
         client.release();
-      }
+      
     }
   });
 
