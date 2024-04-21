@@ -491,7 +491,7 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
             quantityToRemove = Math.abs(sequence.quantity_in_this_sequence);
             sequence.quantity_in_this_sequence = 0;
           } else {
-            quantityToRemove = 0;
+            quantityToRemove = sequence.quantity_in_this_sequence -= quantityToRemove;
           }
         }
       }
