@@ -457,7 +457,7 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
 
 
   // Unstock route
-  router.post('/unstock', async (req, res) => {
+  router.post('/unstock',authenticateUser, async (req, res) => {
     // Data store
     let sequences = [];
   
@@ -484,7 +484,7 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
     }
   
     // Database operations
-    const client = await pool.connect();
+    
     try {
       await client.query('BEGIN');
   
