@@ -505,7 +505,7 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
       }
   
       await pool.query('COMMIT');
-      return res.status(200).json({ message: 'Product unstocked successfully' });
+      return res.status(200).json({ message: 'Product unstocked successfully test 4' });
     } catch (error) {
       await pool.query('ROLLBACK');
       console.error('Error during unstocking:', error);
