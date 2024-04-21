@@ -496,12 +496,12 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
           await client.query('DELETE FROM StorageTransactions WHERE sequence_number = $1', [sequenceNumber]);
         } else {
           // Update the remaining quantity for the sequence
-          await client.query('UPDATE StorageTransactions SET quantity_in_this_sequence = $1 WHERE sequence_number = $2', [remainingQuantity, sequenceNumber]);
+          await client.query('UPDATE StorageTransactions SET quantity_in_this_sequence = $1 WHERE sequence_number = $2 AND locker_barcode = $3', [remainingQuantity, sequenceNumber, lockerBarcode]);
         }
       }
   
       // Update quantity_in_this_locker for the locker and product
-      await client.query('UPDATE StorageTransactions SET quantity_in_this_locker = quantity_in_this_locker - $1 WHERE locker_barcode = $2 AND product_barcode = $3', [req.body.quantityToRemove, lockerBarcode, productBarcode]);
+      await client.query('UPDATE StorageTransactions SET quantity_in_this_locker = quantity_in_this_locker - $1 WHERE locker_barcode = $2 AND sample_barcode = $3', [req.body.quantityToRemove, lockerBarcode, productBarcode]);
   
       await client.query('COMMIT');
       return res.status(200).json({ message: 'Product unstocked successfully' });
