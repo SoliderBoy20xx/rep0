@@ -457,13 +457,14 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
 
 
   // Unstock route
-  router.post('/unstock', (req, res) => {
+  router.post('/unstock', async (req, res) => {
     // Data store
     let sequences = [];
   
     const selectedSequences = req.body.selectedSequences;
     let quantityToRemove = req.body.quantityToRemove;
   
+    // Check for bad requests
     if (!selectedSequences || !quantityToRemove) {
       return res.status(400).json({ message: 'Bad request' });
     }
@@ -482,11 +483,36 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
       }
     }
   
-    // Remove the sequence if remaining quantity is 0
-    sequences = sequences.filter(sequence => sequence.quantity_in_this_sequence > 0);
+    // Database operations
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
   
-    return res.status(200).json({ message: 'Product unstocked successfully' });
-});
+      for (const sequence of sequences) {
+        const { sequence_number: sequenceNumber, quantity_in_this_sequence: remainingQuantity } = sequence;
+  
+        if (remainingQuantity < 0) {
+          remainingQuantity = 0; // Set the remaining quantity to 0
+        } else if (remainingQuantity === 0) {
+          // Remove the sequence if remaining quantity is 0
+          await client.query('DELETE FROM StorageTransactions WHERE sequence_number = $1', [sequenceNumber]);
+        } else {
+          // Update the remaining quantity for the sequence
+          await client.query('UPDATE StorageTransactions SET quantity_in_this_sequence = $1 WHERE sequence_number = $2', [remainingQuantity, sequenceNumber]);
+        }
+      }
+  
+      await client.query('COMMIT');
+      return res.status(200).json({ message: 'Product unstocked successfully' });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('Error during unstocking:', error);
+      return res.status(500).json({ message: 'Internal server error' });
+    } finally {
+      client.release();
+    }
+  });
+  
 
 
 
