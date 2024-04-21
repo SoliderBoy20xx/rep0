@@ -502,9 +502,7 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
       }
     }
 
-    // Update quantity_in_this_locker for the locker and product
-    await client.query('UPDATE StorageTransactions SET quantity_in_this_locker = quantity_in_this_locker - $1 WHERE locker_barcode = $2 AND product_barcode = $3', [req.body.quantityToRemove, lockerBarcode, productBarcode]);
-
+   
     await client.query('COMMIT');
     return res.status(200).json({ message: 'Product unstocked successfully' });
   } catch (error) {
