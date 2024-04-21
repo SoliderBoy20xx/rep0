@@ -459,57 +459,64 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
   router.post('/unstock', authenticateUser, async (req, res) => {
     // Data store
     let sequences = [];
-  
+
     const selectedSequences = req.body.selectedSequences;
-    const lockerBarcode = req.body.lockerBarcode;
     let quantityToRemove = req.body.quantityToRemove;
-  
+    const lockerBarcode = req.body.lockerBarcode;
+
     // Check for bad requests
     if (!selectedSequences || !quantityToRemove || !lockerBarcode) {
-      return res.status(400).json({ message: 'Bad request' });
+        return res.status(400).json({ message: 'Bad request' });
     }
-  
-    // Parse selected sequences to ensure it's an array of integers
-    const parsedSequences = selectedSequences.map(Number);
-  
-    // Calculate the remaining quantity for each sequence
-    for (const sequence of sequences) {
-      if (parsedSequences.includes(sequence.sequence_number)) {
-        sequence.quantity_in_this_sequence -= quantityToRemove;
-        // If the remaining quantity is negative, add it back to quantityToRemove
-        if (sequence.quantity_in_this_sequence < 0) {
-          quantityToRemove = Math.abs(sequence.quantity_in_this_sequence);
-          sequence.quantity_in_this_sequence = 0;
-        } else {
-          quantityToRemove = 0;
-        }
-      }
-    }
-  
-    // Database operations
+
+    // Get sequences data from the database
     try {
-      await pool.query('BEGIN');
-  
-      for (const sequence of sequences) {
-        const { sequence_number: sequenceNumber, quantity_in_this_sequence: remainingQuantity } = sequence;
-  
-        if (remainingQuantity < 0) {
-          remainingQuantity = 0; // Set the remaining quantity to 0
-        } else if (remainingQuantity === 0) {
-          // Remove the sequence if remaining quantity is 0
-          await pool.query('DELETE FROM StorageTransactions WHERE sequence_number = $1 AND locker_barcode = $2', [sequenceNumber, lockerBarcode]);
-        } else {
-          // Update the remaining quantity for the sequence
-          await pool.query('UPDATE StorageTransactions SET quantity_in_this_sequence = $1 WHERE sequence_number = $2 AND locker_barcode = $3', [remainingQuantity, sequenceNumber, lockerBarcode]);
+        const client = await pool.connect();
+        await client.query('BEGIN');
+
+        const sequenceResult = await client.query(
+            'SELECT sequence_number, quantity_in_this_sequence FROM StorageTransactions WHERE locker_barcode = $1',
+            [lockerBarcode]
+        );
+        sequences = sequenceResult.rows;
+
+        // Calculate the remaining quantity for each sequence
+        for (const sequence of sequences) {
+            if (selectedSequences.includes(sequence.sequence_number)) {
+                sequence.quantity_in_this_sequence -= quantityToRemove;
+                // If the remaining quantity is negative, add it back to quantityToRemove
+                if (sequence.quantity_in_this_sequence < 0) {
+                    quantityToRemove = Math.abs(sequence.quantity_in_this_sequence);
+                    sequence.quantity_in_this_sequence = 0;
+                } else {
+                    quantityToRemove = 0;
+                }
+            }
         }
-      }
-  
-      await pool.query('COMMIT');
-      return res.status(200).json({ message: 'Product unstocked successfully test 4' });
+
+        // Update the database
+        for (const sequence of sequences) {
+            const { sequence_number: sequenceNumber, quantity_in_this_sequence: remainingQuantity } = sequence;
+
+            if (remainingQuantity < 0) {
+                remainingQuantity = 0; // Set the remaining quantity to 0
+            } else if (remainingQuantity === 0) {
+                // Remove the sequence if remaining quantity is 0
+                await client.query('DELETE FROM StorageTransactions WHERE sequence_number = $1', [sequenceNumber]);
+            } else {
+                // Update the remaining quantity for the sequence
+                await client.query('UPDATE StorageTransactions SET quantity_in_this_sequence = $1 WHERE sequence_number = $2', [remainingQuantity, sequenceNumber]);
+            }
+        }
+
+        await client.query('COMMIT');
+        return res.status(200).json({ message: 'Product unstocked successfully' });
     } catch (error) {
-      await pool.query('ROLLBACK');
-      console.error('Error during unstocking:', error);
-      return res.status(500).json({ message: 'Internal server error' });
+        await client.query('ROLLBACK');
+        console.error('Error during unstocking:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    } finally {
+        client.release();
     }
 });
 
