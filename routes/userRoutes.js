@@ -477,7 +477,7 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
       await client.query('BEGIN');
   
       const sequenceResult = await client.query(
-        'SELECT sequence_number, quantity_in_this_sequence FROM StorageTransactions WHERE locker_barcode = $1 AND sample_barcode = $2',
+        'SELECT sequence_number, quantity_in_this_sequence FROM StorageTransactions WHERE locker_barcode = $1 AND product_barcode = $2',
         [lockerBarcode, productBarcode]
       );
       sequences = sequenceResult.rows;
@@ -491,7 +491,8 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
             quantityToRemove = Math.abs(sequence.quantity_in_this_sequence);
             sequence.quantity_in_this_sequence = 0;
           } else {
-            quantityToRemove = sequence.quantity_in_this_sequence -= quantityToRemove;
+            sequence.quantity_in_this_sequence -= quantityToRemove;
+            quantityToRemove = 0;
           }
         }
       }
