@@ -508,22 +508,25 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
                 await client.query('UPDATE StorageTransactions SET quantity_in_this_sequence = $1 WHERE sequence_number = $2', [remainingQuantity, sequenceNumber]);
             }
         }
-          // Update the quantity_in_this_locker
-            const lockerQuantityResult = await client.query(
-             'SELECT quantity_in_this_locker FROM StorageTransactions WHERE locker_barcode = $1 AND product_barcode = $2',
-             [lockerBarcode, productBarcode]
-             );
-
+  
+        // Update the quantity_in_this_locker
+        const lockerQuantityResult = await client.query(
+          'SELECT quantity_in_this_locker FROM StorageTransactions WHERE locker_barcode = $1 AND product_barcode = $2',
+          [lockerBarcode, productBarcode]
+        );
+        const lockerQuantity = lockerQuantityResult.rows[0].quantity_in_this_locker - quantityToRemove;
+        await client.query('UPDATE StorageTransactions SET quantity_in_this_locker = $1 WHERE locker_barcode = $2 AND product_barcode = $3', [lockerQuantity, lockerBarcode, productBarcode]);
+    
         await client.query('COMMIT');
         return res.status(200).json({ message: 'Product unstocked successfully' });
-    } catch (error) {
+      } catch (error) {
         await client.query('ROLLBACK');
         console.error('Error during unstocking:', error);
         return res.status(500).json({ message: 'Internal server error' });
-    } finally {
+      } finally {
         client.release();
-    }
-});
+      }
+    });
 
   
 
