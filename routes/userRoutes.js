@@ -457,7 +457,6 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
 
   router.post('/unstock', authenticateUser, async (req, res) => {
     // Data store
-    let sequences = [];
     let quantityToRemove = req.body.quantityToRemove;
     const lockerBarcode = req.body.lockerBarcode;
     const productBarcode = req.body.productBarcode;
@@ -470,9 +469,13 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
     }
   
     // Database operations
-    const client = await pool.connect();
     try {
+      const client = await pool.connect();
       await client.query('BEGIN');
+  
+      // Fetch sequences from the database
+      const { rows } = await client.query('SELECT * FROM StorageTransactions WHERE locker_barcode = $1 AND sample_barcode = $2 AND sequence_number = ANY($3)', [lockerBarcode, productBarcode, selectedSequences]);
+      let sequences = rows;
   
       for (const sequence of sequences) {
         if (selectedSequences.includes(sequence.sequence_number)) {
@@ -512,6 +515,7 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
       client.release();
     }
   });
+  
   
   
 
