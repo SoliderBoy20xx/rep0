@@ -469,8 +469,9 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
     }
   
     // Database operations
+    let client;
     try {
-      const client = await pool.connect();
+      client = await pool.connect();
       await client.query('BEGIN');
   
       // Fetch sequences from the database
@@ -484,27 +485,15 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
           if (sequence.quantity_in_this_sequence < 0) {
             quantityToRemove -= Math.abs(sequence.quantity_in_this_sequence);
             sequence.quantity_in_this_sequence = 0;
+            await client.query('DELETE FROM StorageTransactions WHERE sequence_number = $1 AND locker_barcode = $2', [sequence.sequence_number, lockerBarcode]);
           } else {
             quantityToRemove = 0; // Reset quantityToRemove
+            await client.query('UPDATE StorageTransactions SET quantity_in_this_sequence = $1 WHERE sequence_number = $2 AND locker_barcode = $3', [sequence.quantity_in_this_sequence, sequence.sequence_number, lockerBarcode]);
             break; // Stop looping if the quantityToRemove is 0
           }
         }
       }
-  
-      for (const sequence of sequences) {
-        const { sequence_number: sequenceNumber, quantity_in_this_sequence: remainingQuantity } = sequence;
-  
-        console.log(`Updating sequence ${sequenceNumber} - Remaining Quantity: ${remainingQuantity}`);
-  
-        if (remainingQuantity === 0) {
-          // Remove the sequence if remaining quantity is 0
-          await client.query('DELETE FROM StorageTransactions WHERE sequence_number = $1 AND locker_barcode = $2', [sequenceNumber, lockerBarcode]);
-        } else {
-          // Update the remaining quantity for the sequence
-          await client.query('UPDATE StorageTransactions SET quantity_in_this_sequence = $1 WHERE sequence_number = $2 AND locker_barcode = $3', [remainingQuantity, sequenceNumber, lockerBarcode]);
-        }
-      }
-  
+
       await client.query('COMMIT');
       return res.status(200).json({ message: 'Product unstocked successfully' });
     } catch (error) {
@@ -515,6 +504,8 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
       client.release();
     }
   });
+
+
   
   
   
