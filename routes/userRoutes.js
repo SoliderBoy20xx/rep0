@@ -489,11 +489,11 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
       }
   
       for (const sequence of sequences) {
-        const { sequence_number: sequenceNumber, quantity_in_this_sequence: remainingQuantity } = sequence;
+        
   
-        if (remainingQuantity === 0) {
+        if (sequence.quantity_in_this_sequence === 0) {
           // Remove the sequence if remaining quantity is 0
-          await client.query('DELETE FROM StorageTransactions WHERE sequence_number = $1', [sequenceNumber]);
+          await client.query('DELETE FROM StorageTransactions WHERE sequence_number = $1', [sequence.sequence_number]);
         } else {
           // Update the remaining quantity for the sequence
           await client.query('UPDATE StorageTransactions SET quantity_in_this_sequence = $1 WHERE sequence_number = $2 AND locker_barcode = $3', [remainingQuantity, sequenceNumber, lockerBarcode]);
