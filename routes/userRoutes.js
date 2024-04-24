@@ -455,59 +455,69 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
     }
   });
 
-  router.post('/unstock', authenticateUser, async (req, res) => {
-    // Data store
-    let quantityToRemove = req.body.quantityToRemove;
-    const lockerBarcode = req.body.lockerBarcode;
-    const productBarcode = req.body.productBarcode;
-  
-    const selectedSequences = req.body.selectedSequences;
-  
-    // Check for bad requests
-    if (!selectedSequences || !quantityToRemove || !lockerBarcode || !productBarcode) {
-      return res.status(400).json({ message: 'Bad request' });
-    }
-  
-    // Database operations
-    let client;
+ 
+  router.post('/unstock', authenticateUser , async (req, res) => {
     try {
-      client = await pool.connect();
-      await client.query('BEGIN');
+      const selectedSequences = req.body.selectedSequences; // Array of selected sequence numbers
+      const quantityToRemove = req.body.quantityToRemove; // Total quantity to remove
+      const lockerBarcode = req.body.lockerBarcode; // Scanned locker barcode
   
-      // Fetch sequences from the database
-      const { rows } = await client.query('SELECT * FROM StorageTransactions WHERE locker_barcode = $1 AND sample_barcode = $2 AND sequence_number = ANY($3)', [lockerBarcode, productBarcode, selectedSequences]);
-      let sequences = rows;
+      let remainingQuantityToRemove = quantityToRemove;
   
-      for (const sequence of sequences) {
-        if (selectedSequences.includes(sequence.sequence_number)) {
-          
-          rb = sequence.quantity_in_this_sequence - quantityToRemove;
-          sequence.quantity_in_this_sequence -= rb
-          // If the remaining quantity is negative, add it back to quantityToRemove
-          if (sequence.quantity_in_this_sequence < 0) {
-            quantityToRemove -= Math.abs(sequence.quantity_in_this_sequence);
-            sequence.quantity_in_this_sequence = 0;
-            
-          } else {
-            quantityToRemove = 0; // Reset quantityToRemove
-            break; // Stop looping if the quantityToRemove is 0
-          }
+      for (const sequenceNumber of selectedSequences) {
+        if (remainingQuantityToRemove <= 0) {
+          break; // No more quantity to remove
         }
+  
+        // Query to retrieve current quantity in the sequence for the specific locker
+        const sequenceQuery = {
+          text: `SELECT st.sequence_id, st.quantity_in_this_sequence
+                 FROM StorageTransactions st
+                 JOIN Lockers l ON st.locker_id = l.locker_id
+                 WHERE st.sequence_number = $1 AND l.locker_barcode = $2`,
+          values: [sequenceNumber, lockerBarcode],
+        };
+  
+        const sequenceResult = await pool.query(sequenceQuery);
+        const sequence = sequenceResult.rows[0];
+  
+        if (!sequence) {
+          return res.status(404).json({ error: `Sequence ${sequenceNumber} not found in locker ${lockerBarcode}` });
+        }
+  
+        const sequenceId = sequence.sequence_id;
+        let currentQuantity = sequence.quantity_in_this_sequence;
+  
+        // Calculate quantity to deduct from the current sequence
+        const quantityToDeduct = Math.min(currentQuantity, remainingQuantityToRemove);
+  
+        // Update the quantity in the sequence for the specific locker
+        const updateQuery = {
+          text: `UPDATE StorageTransactions
+                 SET quantity_in_this_sequence = $1
+                 WHERE sequence_id = $2`,
+          values: [currentQuantity - quantityToDeduct, sequenceId],
+        };
+  
+        await pool.query(updateQuery);
+  
+        remainingQuantityToRemove -= quantityToDeduct;
       }
-
-      await client.query('COMMIT');
-      return res.status(200).json({ message: 'Product unstocked successfully' });
+  
+      // Check if there's remaining quantity to remove after processing all selected sequences
+      if (remainingQuantityToRemove > 0) {
+        // If there's remaining quantity, recursively call the same logic with the remaining quantity and the rest of the selected sequences
+        const remainingSequences = selectedSequences.slice(selectedSequences.indexOf(sequenceNumber) + 1);
+        await unstockProduct(remainingSequences, remainingQuantityToRemove, lockerBarcode);
+      }
+  
+      // Respond with success message
+      res.json({ message: 'Product unstocked successfully' });
     } catch (error) {
-      await client.query('ROLLBACK');
-      console.error('Error during unstocking:', error);
-      return res.status(500).json({ message: 'Internal server error' });
-    } finally {
-      client.release();
+      console.error('Error unstocking product:', error);
+      res.status(500).json({ error: 'Internal server error' });
     }
   });
-
-
-  
   
   
 
