@@ -487,10 +487,9 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
           if (sequence.quantity_in_this_sequence < 0) {
             quantityToRemove -= Math.abs(sequence.quantity_in_this_sequence);
             sequence.quantity_in_this_sequence = 0;
-            await client.query('DELETE FROM StorageTransactions WHERE sequence_number = $1 AND locker_barcode = $2', [sequence.sequence_number, lockerBarcode]);
+            
           } else {
             quantityToRemove = 0; // Reset quantityToRemove
-            await client.query('UPDATE StorageTransactions SET quantity_in_this_sequence = $1 WHERE sequence_number = $2 AND locker_barcode = $3', [rb, sequence.sequence_number, lockerBarcode]);
             break; // Stop looping if the quantityToRemove is 0
           }
         }
