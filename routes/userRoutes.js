@@ -456,62 +456,57 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
   });
 
  
-  // Recursive function to unstock product based on selected sequences, quantity to remove, and locker barcode
-async function unstockProduct(selectedSequences, quantityToRemove, lockerBarcode) {
+// Recursive function to unstock product based on selected sequences, quantity to remove, and locker barcode
+async function unstockProduct(selectedSequences, remainingQuantityToRemove, lockerBarcode) {
     try {
-      let remainingQuantityToRemove = quantityToRemove;
-  
-      for (const sequenceNumber of selectedSequences) {
-        if (remainingQuantityToRemove <= 0) {
-          break; // No more quantity to remove
-        }
-  
-        // Query to retrieve current quantity in the sequence for the specific locker
-        const sequenceQuery = {
-          text: `SELECT sequence_number, quantity_in_this_sequence
-                 FROM StorageTransactions
-                 WHERE sequence_number = $1 AND locker_barcode = $2`,
-          values: [sequenceNumber, lockerBarcode],
-        };
-  
-        const sequenceResult = await pool.query(sequenceQuery);
-        const sequence = sequenceResult.rows[0];
-  
-        if (!sequence) {
-          return { success: false, message: `Sequence ${sequenceNumber} not found in locker ${lockerBarcode}` };
-        }
-  
-        const currentQuantity = sequence.quantity_in_this_sequence;
-  
-        // Calculate quantity to deduct from the current sequence
-        const quantityToDeduct = Math.min(currentQuantity, remainingQuantityToRemove);
-  
-        // Update the quantity in the sequence for the specific locker
-        const updateQuery = {
-          text: `UPDATE StorageTransactions
-                 SET quantity_in_this_sequence = $1
-                 WHERE sequence_number = $2 AND locker_barcode = $3`,
-          values: [currentQuantity - quantityToDeduct, sequenceNumber, lockerBarcode],
-        };
-  
-        await pool.query(updateQuery);
-  
-        remainingQuantityToRemove -= quantityToDeduct;
+      if (remainingQuantityToRemove <= 0 || selectedSequences.length === 0) {
+        // Terminate recursion when no more quantity to remove or no more sequences to process
+        return { success: true, message: 'Product unstocked successfully' };
       }
   
-      // Check if there's remaining quantity to remove after processing all selected sequences
-      if (remainingQuantityToRemove > 0) {
-        // If there's remaining quantity, recursively call the same logic with the remaining quantity and the rest of the selected sequences
-        return await unstockProduct(selectedSequences.slice(1), remainingQuantityToRemove, lockerBarcode);
+      const sequenceNumber = selectedSequences[0]; // Get the first sequence number to process
+  
+      // Query to retrieve current quantity in the sequence for the specific locker
+      const sequenceQuery = {
+        text: `SELECT sequence_number, quantity_in_this_sequence
+               FROM StorageTransactions
+               WHERE sequence_number = $1 AND locker_barcode = $2`,
+        values: [sequenceNumber, lockerBarcode],
+      };
+  
+      const sequenceResult = await pool.query(sequenceQuery);
+      const sequence = sequenceResult.rows[0];
+  
+      if (!sequence) {
+        return { success: false, message: `Sequence ${sequenceNumber} not found in locker ${lockerBarcode}` };
       }
   
-      // Respond with success message
-      return { success: true, message: 'Product unstocked successfully' };
+      const currentQuantity = sequence.quantity_in_this_sequence;
+  
+      // Calculate quantity to deduct from the current sequence
+      const quantityToDeduct = Math.min(currentQuantity, remainingQuantityToRemove);
+  
+      // Update the quantity in the sequence for the specific locker
+      const updateQuery = {
+        text: `UPDATE StorageTransactions
+               SET quantity_in_this_sequence = $1
+               WHERE sequence_number = $2 AND locker_barcode = $3`,
+        values: [currentQuantity - quantityToDeduct, sequenceNumber, lockerBarcode],
+      };
+  
+      await pool.query(updateQuery);
+  
+      // Calculate remaining quantity to remove after deducting from current sequence
+      const updatedRemainingQuantity = remainingQuantityToRemove - quantityToDeduct;
+  
+      // Recursively call the same function with the rest of the selected sequences and updated remaining quantity
+      return await unstockProduct(selectedSequences.slice(1), updatedRemainingQuantity, lockerBarcode);
     } catch (error) {
       console.error('Error unstocking product:', error);
       return { success: false, message: 'Internal server error' };
     }
   }
+  
   
   // Route to unstock product based on selected sequences, quantity to remove, and locker barcode
   router.post('/unstock', async (req, res) => {
