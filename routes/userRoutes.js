@@ -456,12 +456,8 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
   });
 
  
-  router.post('/unstock', authenticateUser, async (req, res) => {
+  async function unstockProduct(selectedSequences, quantityToRemove, lockerBarcode) {
     try {
-      const selectedSequences = req.body.selectedSequences; // Array of selected sequence numbers
-      const quantityToRemove = req.body.quantityToRemove; // Total quantity to remove
-      const lockerBarcode = req.body.lockerBarcode; // Scanned locker barcode
-  
       let remainingQuantityToRemove = quantityToRemove;
   
       for (const sequenceNumber of selectedSequences) {
@@ -481,11 +477,10 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
         const sequence = sequenceResult.rows[0];
   
         if (!sequence) {
-          return res.status(404).json({ error: `Sequence ${sequenceNumber} not found in locker ${lockerBarcode}` });
+          return { success: false, message: `Sequence ${sequenceNumber} not found in locker ${lockerBarcode}` };
         }
   
-        const sequenceId = sequence.sequence_id;
-        let currentQuantity = sequence.quantity_in_this_sequence;
+        const currentQuantity = sequence.quantity_in_this_sequence;
   
         // Calculate quantity to deduct from the current sequence
         const quantityToDeduct = Math.min(currentQuantity, remainingQuantityToRemove);
@@ -507,11 +502,32 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
       if (remainingQuantityToRemove > 0) {
         // If there's remaining quantity, recursively call the same logic with the remaining quantity and the rest of the selected sequences
         const remainingSequences = selectedSequences.slice(selectedSequences.indexOf(sequenceNumber) + 1);
-        await unstockProduct(remainingSequences, remainingQuantityToRemove, lockerBarcode);
+        return await unstockProduct(remainingSequences, remainingQuantityToRemove, lockerBarcode);
       }
   
       // Respond with success message
-      res.json({ message: 'Product unstocked successfully' });
+      return { success: true, message: 'Product unstocked successfully' };
+    } catch (error) {
+      console.error('Error unstocking product:', error);
+      return { success: false, message: 'Internal server error' };
+    }
+  }
+  
+  // Route to unstock product based on selected sequences, quantity to remove, and locker barcode
+  router.post('/unstock', async (req, res) => {
+    try {
+      const selectedSequences = req.body.selectedSequences; // Array of selected sequence numbers
+      const quantityToRemove = req.body.quantityToRemove; // Total quantity to remove
+      const lockerBarcode = req.body.lockerBarcode; // Scanned locker barcode
+  
+      // Call the recursive function to unstock the product
+      const result = await unstockProduct(selectedSequences, quantityToRemove, lockerBarcode);
+  
+      if (result.success) {
+        res.json({ message: result.message });
+      } else {
+        res.status(404).json({ error: result.message });
+      }
     } catch (error) {
       console.error('Error unstocking product:', error);
       res.status(500).json({ error: 'Internal server error' });
