@@ -471,7 +471,7 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
   
         // Query to retrieve current quantity in the sequence for the specific locker
         const sequenceQuery = {
-          text: `SELECT sequence_id, quantity_in_this_sequence
+          text: `SELECT sequence_number, quantity_in_this_sequence
                  FROM StorageTransactions
                  WHERE sequence_number = $1 AND locker_barcode = $2`,
           values: [sequenceNumber, lockerBarcode],
