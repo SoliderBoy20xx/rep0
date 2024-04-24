@@ -456,7 +456,8 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
   });
 
  
-  async function unstockProduct(selectedSequences, quantityToRemove, lockerBarcode) {
+  // Recursive function to unstock product based on selected sequences, quantity to remove, and locker barcode
+async function unstockProduct(selectedSequences, quantityToRemove, lockerBarcode) {
     try {
       let remainingQuantityToRemove = quantityToRemove;
   
@@ -501,8 +502,7 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
       // Check if there's remaining quantity to remove after processing all selected sequences
       if (remainingQuantityToRemove > 0) {
         // If there's remaining quantity, recursively call the same logic with the remaining quantity and the rest of the selected sequences
-        const remainingSequences = selectedSequences.slice(selectedSequences.indexOf(sequenceNumber) + 1);
-        return await unstockProduct(remainingSequences, remainingQuantityToRemove, lockerBarcode);
+        return await unstockProduct(selectedSequences.slice(1), remainingQuantityToRemove, lockerBarcode);
       }
   
       // Respond with success message
