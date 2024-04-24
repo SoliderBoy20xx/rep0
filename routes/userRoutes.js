@@ -456,7 +456,7 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
   });
 
  
-  router.post('/unstock', authenticateUser , async (req, res) => {
+  router.post('/unstock', authenticateUser, async (req, res) => {
     try {
       const selectedSequences = req.body.selectedSequences; // Array of selected sequence numbers
       const quantityToRemove = req.body.quantityToRemove; // Total quantity to remove
@@ -471,10 +471,9 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
   
         // Query to retrieve current quantity in the sequence for the specific locker
         const sequenceQuery = {
-          text: `SELECT st.sequence_id, st.quantity_in_this_sequence
-                 FROM StorageTransactions st
-                 JOIN Lockers l ON st.locker_id = l.locker_id
-                 WHERE st.sequence_number = $1 AND l.locker_barcode = $2`,
+          text: `SELECT sequence_id, quantity_in_this_sequence
+                 FROM StorageTransactions
+                 WHERE sequence_number = $1 AND locker_barcode = $2`,
           values: [sequenceNumber, lockerBarcode],
         };
   
@@ -495,8 +494,8 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
         const updateQuery = {
           text: `UPDATE StorageTransactions
                  SET quantity_in_this_sequence = $1
-                 WHERE sequence_id = $2`,
-          values: [currentQuantity - quantityToDeduct, sequenceId],
+                 WHERE sequence_number = $2 AND locker_barcode = $3`,
+          values: [currentQuantity - quantityToDeduct, sequenceNumber, lockerBarcode],
         };
   
         await pool.query(updateQuery);
