@@ -485,7 +485,10 @@ async function unstockProduct(selectedSequences, remainingQuantityToRemove, lock
   
       // Calculate quantity to deduct from the current sequence
       const quantityToDeduct = Math.min(currentQuantity, remainingQuantityToRemove);
-  
+      // Log relevant values for debugging
+         console.log(`Loop: sequenceNumber=${sequenceNumber}, currentQuantity=${currentQuantity}, quantityToDeduct=${quantityToDeduct}`);
+         console.log(`Loop: remainingQuantityToRemove=${remainingQuantityToRemove}, updatedRemainingQuantity=${remainingQuantityToRemove - quantityToDeduct}`);
+
       // Update the quantity in the sequence for the specific locker
       const updateQuery = {
         text: `UPDATE StorageTransactions
@@ -498,6 +501,7 @@ async function unstockProduct(selectedSequences, remainingQuantityToRemove, lock
   
       // Calculate remaining quantity to remove after deducting from current sequence
       const updatedRemainingQuantity = remainingQuantityToRemove - quantityToDeduct;
+      console.log(`ddp: updatedRemainingQuantity=${updatedRemainingQuantity}`);
   
       // Recursively call the same function with the rest of the selected sequences and updated remaining quantity
       return await unstockProduct(selectedSequences.slice(1), updatedRemainingQuantity, lockerBarcode);
