@@ -476,7 +476,10 @@ async function unstockProduct(selectedSequences, remainingQuantityToRemove, lock
       };
   
       const sequenceResult = await pool.query(sequenceQuery);
-      const sequence = sequenceResult.rows[0];
+console.log('Sequence Result éé :', sequenceResult.rows); // Log the entire result set
+
+const sequence = sequenceResult.rows[0];
+console.log('Sequence éé:', JSON.stringify(sequence, null, 2)); // Log the specific se
 
       console.log('Sequence HHH:', JSON.stringify(sequence, null, 2));
 
