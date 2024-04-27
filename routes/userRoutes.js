@@ -479,7 +479,7 @@ async function unstockProduct(selectedSequences, remainingQuantityToRemove, lock
       const sequenceResult = await pool.query(sequenceQuery);
       const sequence = sequenceResult.rows[0];
 
-      console.log(`H2: sequence =${sequence}`);
+      console.log('Sequence HHH:', JSON.stringify(sequence, null, 2));
 
       if (!sequence) {
         return { success: false, message: `Sequence ${sequenceNumber} not found in locker ${lockerBarcode}` };
