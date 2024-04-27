@@ -504,12 +504,21 @@ async function unstockProduct(selectedSequences, remainingQuantityToRemove, lock
 
 
          console.log(`H1 AGAIN : sequenceNumber =${sequenceNumber}`);
+
+         const HP1 = currentQuantity - quantityToDeduct ;
+         console.log(`LOCKER =${lockerBarcode}`);
+         console.log(`HP1 =${HP1}`);
+
+         
+    
+
+
       // Update the quantity in the sequence for the specific locker
       const updateQuery = {
         text: `UPDATE StorageTransactions
                SET quantity_in_this_sequence = $1
                WHERE sequence_number = $2 AND locker_barcode = $3`,
-        values: [currentQuantity - quantityToDeduct, sequenceNumber, lockerBarcode],
+        values: [HP1, sequenceNumber, lockerBarcode],
       };
   
       await pool.query(updateQuery);
