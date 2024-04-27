@@ -486,7 +486,7 @@ async function unstockProduct(selectedSequences, remainingQuantityToRemove, lock
       }
   
       const currentQuantity = sequence.quantity_in_this_sequence;
-  
+      console.log(`currentQuantity is equal to  =${currentQuantity}`);
       // Calculate quantity to deduct from the current sequence
       const quantityToDeduct = Math.min(currentQuantity, remainingQuantityToRemove);
       // Log relevant values for debugging
