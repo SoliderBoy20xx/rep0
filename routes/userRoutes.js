@@ -517,9 +517,15 @@ async function unstockProduct(selectedSequences, remainingQuantityToRemove, lock
       // Calculate remaining quantity to remove after deducting from current sequence
       const updatedRemainingQuantity = remainingQuantityToRemove - quantityToDeduct  ;
       console.log(`ddp: updatedRemainingQuantity=${updatedRemainingQuantity}`);
-  
+
+       // Recursively call the function with the rest of the selected sequences and updated remaining quantity
+       const nextSequences = selectedSequences.slice(1);
+       console.log('Next selectedSequences:', nextSequences);
+
+       return await unstockProduct(nextSequences, updatedRemainingQuantity, lockerBarcode);
+   
       // Recursively call the same function with the rest of the selected sequences and updated remaining quantity
-      return await unstockProduct(selectedSequences.slice(1), updatedRemainingQuantity, lockerBarcode);
+      
     } catch (error) {
       console.error('Error unstocking product:', error);
       return { success: false, message: 'Internal server error' };
