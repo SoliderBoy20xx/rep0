@@ -1,5 +1,4 @@
 const express = require('express');
-const bodyParser = require('body-parser');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -12,8 +11,12 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 const HOST = '0.0.0.0';  // Listen on all available network interfaces
+
 // Middleware to parse JSON request bodies
 app.use(express.json());
+
+// Enable CORS
+app.use(cors());
 
 // Logging middleware to track incoming requests
 app.use((req, res, next) => {
@@ -21,9 +24,7 @@ app.use((req, res, next) => {
     next(); // Call next middleware or route handler
 });
 
-// Middleware
-app.use(bodyParser.json());
-app.use(cors());
+
 
 // Use the authRoutes middleware
 app.use('/auth', authRoutes);
