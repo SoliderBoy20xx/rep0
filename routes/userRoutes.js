@@ -475,8 +475,8 @@ async function unstockProduct(selectedSequences, remainingQuantityToRemove, lock
         values: [sequenceNumber, lockerBarcode],
       };
   
+      const sequenceResult2 = await pool.query(sequenceQuery);
       const sequenceResult = await pool.query(sequenceQuery);
-       sequenceResult = await pool.query(sequenceQuery);
 console.log('Sequence Result éé :', sequenceResult.rows); // Log the entire result set
 
 const sequence = sequenceResult.rows[0];
