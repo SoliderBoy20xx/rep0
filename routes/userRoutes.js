@@ -486,6 +486,14 @@ async function unstockProduct(selectedSequences, remainingQuantityToRemove, lock
       }
   
       const currentQuantity = sequence.quantity_in_this_sequence;
+
+      if (currentQuantity === undefined || currentQuantity === null) {
+        // Handle unexpected null or undefined values for quantity
+        console.error(`Error: Current quantity for sequence ${sequenceNumber} in locker ${lockerBarcode} is undefined or null`);
+        return { success: false, message: 'Unexpected data inconsistency' };
+      }
+
+
       console.log(`currentQuantity is equal to  =${currentQuantity}`);
       // Calculate quantity to deduct from the current sequence
       const quantityToDeduct = Math.min(currentQuantity, remainingQuantityToRemove);
