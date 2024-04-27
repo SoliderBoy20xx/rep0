@@ -459,7 +459,7 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
 // Recursive function to unstock product based on selected sequences, quantity to remove, and locker barcode
 async function unstockProduct(selectedSequences, remainingQuantityToRemove, lockerBarcode) {
     try {
-      if (remainingQuantityToRemove <= 0 || selectedSequences.length === 0) {
+      if (remainingQuantityToRemove <= 0) {
         // Terminate recursion when no more quantity to remove or no more sequences to process
         return { success: true, message: 'Product unstocked successfully' };
       }
