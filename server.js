@@ -1,4 +1,6 @@
 const express = require('express');
+const bodyParser = require('body-parser');
+const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { Pool } = require('pg');
@@ -19,7 +21,9 @@ app.use((req, res, next) => {
     next(); // Call next middleware or route handler
 });
 
-
+// Middleware
+app.use(bodyParser.json());
+app.use(cors());
 
 // Use the authRoutes middleware
 app.use('/auth', authRoutes);

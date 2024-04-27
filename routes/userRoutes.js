@@ -465,6 +465,8 @@ async function unstockProduct(selectedSequences, remainingQuantityToRemove, lock
       }
   
       const sequenceNumber = selectedSequences[0]; // Get the first sequence number to process
+
+      console.log(`H1: sequenceNumber =${sequenceNumber}`);
   
       // Query to retrieve current quantity in the sequence for the specific locker
       const sequenceQuery = {
@@ -476,7 +478,9 @@ async function unstockProduct(selectedSequences, remainingQuantityToRemove, lock
   
       const sequenceResult = await pool.query(sequenceQuery);
       const sequence = sequenceResult.rows[0];
-  
+
+      console.log(`H2: sequence =${sequence}`);
+
       if (!sequence) {
         return { success: false, message: `Sequence ${sequenceNumber} not found in locker ${lockerBarcode}` };
       }
@@ -489,6 +493,9 @@ async function unstockProduct(selectedSequences, remainingQuantityToRemove, lock
          console.log(`Loop: sequenceNumber=${sequenceNumber}, currentQuantity=${currentQuantity}, quantityToDeduct=${quantityToDeduct}`);
          console.log(`Loop: remainingQuantityToRemove=${remainingQuantityToRemove}`);
 
+
+
+         console.log(`H1 AGAIN : sequenceNumber =${sequenceNumber}`);
       // Update the quantity in the sequence for the specific locker
       const updateQuery = {
         text: `UPDATE StorageTransactions
@@ -500,7 +507,7 @@ async function unstockProduct(selectedSequences, remainingQuantityToRemove, lock
       await pool.query(updateQuery);
   
       // Calculate remaining quantity to remove after deducting from current sequence
-      const updatedRemainingQuantity = remainingQuantityToRemove - quantityToDeduct ;
+      const updatedRemainingQuantity = remainingQuantityToRemove - quantityToDeduct  ;
       console.log(`ddp: updatedRemainingQuantity=${updatedRemainingQuantity}`);
   
       // Recursively call the same function with the rest of the selected sequences and updated remaining quantity
