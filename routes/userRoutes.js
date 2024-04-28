@@ -459,9 +459,9 @@ router.get('/possible-sequences/:lockerBarcode/:productBarcode/:quantity', authe
 // Recursive function to unstock product based on selected sequences, quantity to remove, and locker barcode
 async function unstockProduct(selectedSequences, remainingQuantityToRemove, lockerBarcode) {
     try {
-        if (remainingQuantityToRemove <= 0 || selectedSequences.length === 0) {
+        if (updatedRemainingQuantity <= 0 || selectedSequences.length === 0) {
             return { success: true, message: 'Product unstocked successfully' };
-        }
+        } else{
   
       const sequenceNumber = selectedSequences[0]; // Get the first sequence number to process
 
@@ -533,9 +533,10 @@ console.log('Sequence éé:', JSON.stringify(sequence, null, 2)); // Log the spe
        // Recursively call the function with the rest of the selected sequences and updated remaining quantity
        const nextSequences = selectedSequences.slice(1);
        console.log('Next selectedSequences:', nextSequences);
+      
 
        return await unstockProduct(nextSequences, updatedRemainingQuantity, lockerBarcode);
-   
+    }
       // Recursively call the same function with the rest of the selected sequences and updated remaining quantity
       
     } catch (error) {
@@ -543,7 +544,7 @@ console.log('Sequence éé:', JSON.stringify(sequence, null, 2)); // Log the spe
       return { success: false, message: 'Internal server error' };
     }
   }
-  
+
   
   // Route to unstock product based on selected sequences, quantity to remove, and locker barcode
   router.post('/unstock', async (req, res) => {
