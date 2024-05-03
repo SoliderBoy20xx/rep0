@@ -512,7 +512,7 @@ console.log('Sequence éé:', JSON.stringify(sequence, null, 2)); // Log the spe
 
          const HP1 = currentQuantity - quantityToDeduct ;
          console.log(`LOCKER =${lockerBarcode}`);
-         console.log(`sample =${sampleBarcode}`);
+         
          console.log(`HP1 =${HP1}`);
 
          
@@ -555,7 +555,8 @@ console.log('Sequence éé:', JSON.stringify(sequence, null, 2)); // Log the spe
       const selectedSequences = req.body.selectedSequences; // Array of selected sequence numbers
       const quantityToRemove = req.body.quantityToRemove; // Total quantity to remove
       const lockerBarcode = req.body.lockerBarcode; // Scanned locker barcode
-      const sampleBarcode = req.body.sampleBarcode;
+      const productBarcode = req.body.productBarcode;
+
       // Call the recursive function to unstock the product
       const result = await unstockProduct(selectedSequences, quantityToRemove, lockerBarcode);
   
@@ -578,7 +579,7 @@ console.log('Sequence éé:', JSON.stringify(sequence, null, 2)); // Log the spe
                     SELECT id FROM Lockers WHERE barcode = $3
                 )
             `,
-            values: [quantityToRemove, sampleBarcode, lockerBarcode],
+            values: [quantityToRemove, productBarcode, lockerBarcode],
         };
         await pool.query(updateQuantityInThisLockerQuery);
 
@@ -596,7 +597,7 @@ console.log('Sequence éé:', JSON.stringify(sequence, null, 2)); // Log the spe
                 )
                 WHERE sample_barcode = $2
             `,
-            values: [quantityToRemove, sampleBarcode],
+            values: [quantityToRemove, productBarcode],
         };
         
         await pool.query(updateTotalQuantityQuery);
