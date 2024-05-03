@@ -512,6 +512,7 @@ console.log('Sequence éé:', JSON.stringify(sequence, null, 2)); // Log the spe
 
          const HP1 = currentQuantity - quantityToDeduct ;
          console.log(`LOCKER =${lockerBarcode}`);
+         console.log(`sample =${sampleBarcode}`);
          console.log(`HP1 =${HP1}`);
 
          
@@ -554,11 +555,53 @@ console.log('Sequence éé:', JSON.stringify(sequence, null, 2)); // Log the spe
       const selectedSequences = req.body.selectedSequences; // Array of selected sequence numbers
       const quantityToRemove = req.body.quantityToRemove; // Total quantity to remove
       const lockerBarcode = req.body.lockerBarcode; // Scanned locker barcode
-  
+      const sampleBarcode = req.body.sampleBarcode;
       // Call the recursive function to unstock the product
       const result = await unstockProduct(selectedSequences, quantityToRemove, lockerBarcode);
   
       if (result.success) {
+         // Update quantity_in_this_locker for all products with the same barcode in this locker
+         const updateQuantityInThisLockerQuery = {
+            text: `
+                UPDATE StorageTransactions 
+                SET quantity_in_this_locker = (
+                    SELECT GREATEST(
+                        COALESCE(MAX(quantity_in_this_locker), 0) - $1, 
+                        0
+                    ) 
+                    FROM StorageTransactions 
+                    WHERE sample_barcode = $2 AND locker_id = (
+                        SELECT id FROM Lockers WHERE barcode = $3
+                    )
+                ) 
+                WHERE sample_barcode = $2 AND locker_id = (
+                    SELECT id FROM Lockers WHERE barcode = $3
+                )
+            `,
+            values: [quantityToRemove, sampleBarcode, lockerBarcode],
+        };
+        await pool.query(updateQuantityInThisLockerQuery);
+
+        // Update total_quantity for all products with the same barcode across all lockers
+        const updateTotalQuantityQuery = {
+            text: `
+                UPDATE StorageTransactions 
+                SET total_quantity = (
+                    SELECT GREATEST(
+                        COALESCE(MAX(total_quantity), 0) - $1, 
+                        0
+                    ) 
+                    FROM StorageTransactions 
+                    WHERE sample_barcode = $2
+                )
+                WHERE sample_barcode = $2
+            `,
+            values: [quantityToRemove, sampleBarcode],
+        };
+        
+        await pool.query(updateTotalQuantityQuery);
+
+
         res.json({ message: result.message });
       } else {
         res.status(404).json({ error: result.message });
