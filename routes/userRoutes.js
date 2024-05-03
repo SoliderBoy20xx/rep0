@@ -570,16 +570,22 @@ console.log('Sequence éé:', JSON.stringify(sequence, null, 2)); // Log the spe
                         COALESCE(MAX(quantity_in_this_locker), 0) - $1, 
                         0
                     ) 
-                    FROM StorageTransactions 
-                    WHERE sample_barcode = $2 AND locker_id = (
-                        SELECT id FROM Lockers WHERE barcode = $3
-                    )
+                    FROM StorageTransactions AS st
+                    WHERE st.sample_barcode = $2 
+                        AND st.locker_id = (
+                            SELECT locker_id 
+                            FROM Lockers 
+                            WHERE locker_barcode = $3
+                        )
                 ) 
-                WHERE sample_barcode = $2 AND locker_id = (
-                    SELECT id FROM Lockers WHERE barcode = $3
-                )
+                WHERE sample_barcode = $2 
+                    AND locker_id = (
+                        SELECT locker_id 
+                        FROM Lockers 
+                        WHERE locker_barcode = $3
+                    )
             `,
-            values: [quantityToRemove, productBarcode, lockerBarcode],
+            values: [quantityToRemove, sampleBarcode, lockerBarcode],
         };
         await pool.query(updateQuantityInThisLockerQuery);
 
