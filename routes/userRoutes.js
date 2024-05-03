@@ -585,7 +585,7 @@ console.log('Sequence éé:', JSON.stringify(sequence, null, 2)); // Log the spe
                         WHERE locker_barcode = $3
                     )
             `,
-            values: [quantityToRemove, sampleBarcode, lockerBarcode],
+            values: [quantityToRemove, productBarcode, lockerBarcode],
         };
         await pool.query(updateQuantityInThisLockerQuery);
 
