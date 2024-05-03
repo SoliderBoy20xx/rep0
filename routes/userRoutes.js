@@ -528,6 +528,17 @@ console.log('Sequence éé:', JSON.stringify(sequence, null, 2)); // Log the spe
       };
   
       await pool.query(updateQuery);
+
+       // !!!!!!!!!!!!!!!!!!! neew new Check if the updated quantity is zero and delete the record if necessary
+       if (updatedQuantity === 0) {
+        const deleteQuery = {
+            text: `DELETE FROM StorageTransactions
+                   WHERE sequence_number = $1 AND locker_barcode = $2 AND sample_barcode = $3`,
+            values: [sequenceNumber, lockerBarcode, productBarcode],
+        };
+
+        await pool.query(deleteQuery);
+    }
   
       // Calculate remaining quantity to remove after deducting from current sequence
       const updatedRemainingQuantity = remainingQuantityToRemove - quantityToDeduct  ;
