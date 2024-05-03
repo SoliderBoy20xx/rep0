@@ -533,8 +533,8 @@ console.log('Sequence éé:', JSON.stringify(sequence, null, 2)); // Log the spe
        if (HP1 === 0) {
         const deleteQuery = {
             text: `DELETE FROM StorageTransactions
-                   WHERE sequence_number = $1 AND locker_barcode = $2 AND sample_barcode = $3`,
-            values: [sequenceNumber, lockerBarcode, productBarcode],
+                   WHERE sequence_number = $1 AND locker_barcode = $2 `,
+            values: [sequenceNumber, lockerBarcode],
         };
 
         await pool.query(deleteQuery);
