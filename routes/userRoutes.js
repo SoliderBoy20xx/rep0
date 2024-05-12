@@ -631,7 +631,33 @@ console.log('Sequence éé:', JSON.stringify(sequence, null, 2)); // Log the spe
   });
   
   
-
+  // additional routers , after beta 
+  router.get('/productdetails/:productBarcode', authenticateUser, async (req, res) => {
+    const { productBarcode } = req.params;
+  
+    try {
+      // Query StorageTransactions table for transactions with matching product barcode
+      const transactionsQuery = {
+        text: `
+          SELECT transaction_id, sample_id, sample_barcode, locker_id , locker_barcode , quantity_in_this_locker ,sequence_number ,quantity_in_this_sequence ,total_quantity 
+          FROM StorageTransactions
+          WHERE sample_barcode = $1
+        `,
+        values: [productBarcode],
+      };
+  
+      const transactionsResult = await pool.query(transactionsQuery);
+  
+      // Return the transactions in a table-like format
+      const transactions = transactionsResult.rows;
+  
+      res.json({ transactions });
+    } catch (error) {
+      console.error('Error retrieving product details:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+  
   
 
 
