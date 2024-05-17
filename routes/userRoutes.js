@@ -632,8 +632,8 @@ console.log('Sequence éé:', JSON.stringify(sequence, null, 2)); // Log the spe
   
   
   // additional routers , after beta 
-  router.get('/productdetails/:productBarcode', authenticateUser, async (req, res) => {
-    const { productBarcode } = req.params;
+  router.get('/productdetails/:barcode', authenticateUser, async (req, res) => {
+    const { barcode } = req.params;
   
     try {
       // Query StorageTransactions table for transactions with matching product barcode
@@ -643,7 +643,7 @@ console.log('Sequence éé:', JSON.stringify(sequence, null, 2)); // Log the spe
           FROM StorageTransactions
           WHERE sample_barcode = $1
         `,
-        values: [productBarcode],
+        values: [barcode],
       };
   
       const transactionsResult = await pool.query(transactionsQuery);
