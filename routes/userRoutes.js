@@ -679,5 +679,52 @@ console.log('Sequence éé:', JSON.stringify(sequence, null, 2)); // Log the spe
 }
 });
 
+//fetching tables 
+
+// Route to fetch all records from StorageTransactions table
+router.get('/storagetransactions', authenticateUser, async  (req, res) => {
+    try {
+      const query = `
+        SELECT *
+        FROM StorageTransactions;
+      `;
+      const { rows } = await pool.query(query);
+      res.status(200).json(rows);
+    } catch (error) {
+      console.error('Error fetching StorageTransactions:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+  
+  // Route to fetch all records from Lockers table
+  router.get('/lockers', authenticateUser, async (req, res) => {
+    try {
+      const query = `
+        SELECT *
+        FROM Lockers;
+      `;
+      const { rows } = await pool.query(query);
+      res.status(200).json(rows);
+    } catch (error) {
+      console.error('Error fetching Lockers:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+  
+  // Route to fetch all records from Samples table
+  router.get('/samples', authenticateUser, async (req, res) => {
+    try {
+      const query = `
+        SELECT *
+        FROM Samples;
+      `;
+      const { rows } = await pool.query(query);
+      res.status(200).json(rows);
+    } catch (error) {
+      console.error('Error fetching Samples:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
 
 module.exports = { router, authenticateUser, authorizeAdmin }; 
