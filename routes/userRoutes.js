@@ -636,17 +636,29 @@ console.log('Sequence éé:', JSON.stringify(sequence, null, 2)); // Log the spe
     const { barcode } = req.params;
     console.log('barcode', barcode);
     try {
-      // Query StorageTransactions table for transactions with matching product barcode
-      const transactionsQuery = {
-        text: `
-          SELECT transaction_id, sample_id, sample_barcode, locker_id , locker_barcode , quantity_in_this_locker ,sequence_number ,quantity_in_this_sequence ,total_quantity 
-          FROM StorageTransactions
-          WHERE sample_barcode = $1
-        `,
-        values: [barcode],
-      };
-  
-      const transactionsResult = await pool.query(transactionsQuery);
+        const transactionsQuery = {
+            text: `
+                SELECT 
+                    transaction_id, 
+                    sample_id, 
+                    sample_barcode, 
+                    locker_id, 
+                    locker_barcode, 
+                    quantity_in_this_locker, 
+                    sequence_number, 
+                    quantity_in_this_sequence, 
+                    total_quantity 
+                FROM 
+                    StorageTransactions 
+                WHERE 
+                    sample_barcode = $1
+            `,
+            values: [barcode],
+        };
+
+        console.log('Query:', transactionsQuery); // Log the query for debugging
+
+        const transactionsResult = await pool.query(transactionsQuery);
   
       // Return the transactions in a table-like format
       const transactions = transactionsResult.rows;
