@@ -632,9 +632,9 @@ console.log('Sequence éé:', JSON.stringify(sequence, null, 2)); // Log the spe
   
   
   // additional routers , after beta 
-  router.get('/productdetails/:barcode', authenticateUser, async (req, res) => {
-    const {barcode} = req.params;
-    console.log('barcode', barcode);
+  router.get('/productdetails/:Pbarcode', authenticateUser, async (req, res) => {
+    const {Pbarcode} = req.params;
+    console.log('barcode', Pbarcode);
     try {
         const transactionsQuery = {
             text: `
@@ -653,7 +653,7 @@ console.log('Sequence éé:', JSON.stringify(sequence, null, 2)); // Log the spe
                 WHERE 
                     sample_barcode = $1
             `,
-            values: [barcode],
+            values: [Pbarcode],
         };
 
         console.log('Query:', transactionsQuery); // Log the query for debugging
@@ -668,7 +668,7 @@ console.log('Sequence éé:', JSON.stringify(sequence, null, 2)); // Log the spe
       if (transactions.length > 0) {
         res.json({ transactions });
     } else {
-        console.log('No transactions found for barcode:', barcode);
+        console.log('No transactions found for barcode:', Pbarcode);
         res.status(404).json({ error: 'No transactions found' });
     }
 } catch (error) {
