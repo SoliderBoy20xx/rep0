@@ -319,7 +319,7 @@ router.post('/lockers', async (req, res) => {
 
 // Route to store the product in the StorageTransactions table
 router.post('/storeProduct', authenticateUser, async (req, res) => {
-    const { lockerBarcode, sampleBarcode, quantity } = req.body;
+    const { lockerBarcode, sampleBarcode, quantity, timestamp } = req.body;
 
     try {
         // Check if the locker exists
@@ -372,8 +372,8 @@ router.post('/storeProduct', authenticateUser, async (req, res) => {
 
         // Insert the new transaction
         const insertQuery = {
-            text: 'INSERT INTO StorageTransactions (locker_id, locker_barcode, sample_id, sample_barcode, quantity_in_this_sequence, quantity_in_this_locker, total_quantity, sequence_number, timestamp) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())',
-            values: [lockerId, lockerBarcode, sampleId, sampleBarcode, quantity, quantityInThisLocker, totalQuantity, sequenceNumber],
+            text: 'INSERT INTO StorageTransactions (locker_id, locker_barcode, sample_id, sample_barcode, quantity_in_this_sequence, quantity_in_this_locker, total_quantity, sequence_number, timestamp) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9 )',
+            values: [lockerId, lockerBarcode, sampleId, sampleBarcode, quantity, quantityInThisLocker, totalQuantity, sequenceNumber, timestamp],
         };        
         await pool.query(insertQuery);
 
