@@ -634,7 +634,7 @@ console.log('Sequence éé:', JSON.stringify(sequence, null, 2)); // Log the spe
   // additional routers , after beta 
   router.get('/productdetails/:barcode', authenticateUser, async (req, res) => {
     const { barcode } = req.params;
-  
+    console.log('barcode', barcode);
     try {
       // Query StorageTransactions table for transactions with matching product barcode
       const transactionsQuery = {
@@ -651,7 +651,8 @@ console.log('Sequence éé:', JSON.stringify(sequence, null, 2)); // Log the spe
       // Return the transactions in a table-like format
       const transactions = transactionsResult.rows;
       console.log('Transactions:', transactions); // Log transaction
-  
+      console.log('Transactions:', transactions[1]); // Log transaction
+      
       if (transactions.length > 0) {
         res.json({ transactions });
     } else {
@@ -663,7 +664,6 @@ console.log('Sequence éé:', JSON.stringify(sequence, null, 2)); // Log the spe
     res.status(500).json({ error: 'Internal server error' });
 }
 });
-
 
 
 module.exports = { router, authenticateUser, authorizeAdmin }; 
