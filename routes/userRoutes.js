@@ -650,18 +650,19 @@ console.log('Sequence éé:', JSON.stringify(sequence, null, 2)); // Log the spe
   
       // Return the transactions in a table-like format
       const transactions = transactionsResult.rows;
+      console.log('Transactions:', transactions); // Log transaction
   
-      res.json({ transactions });
-    } catch (error) {
-      console.error('Error retrieving product details:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      if (transactions.length > 0) {
+        res.json({ transactions });
+    } else {
+        console.log('No transactions found for barcode:', barcode);
+        res.status(404).json({ error: 'No transactions found' });
     }
-  });
-  
-  
-
-
-
+} catch (error) {
+    console.error('Error retrieving product details:', error);
+    res.status(500).json({ error: 'Internal server error' });
+}
+});
 
 
 
