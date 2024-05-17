@@ -633,7 +633,8 @@ console.log('Sequence éé:', JSON.stringify(sequence, null, 2)); // Log the spe
   
   // additional routers , after beta 
   router.get('/productdetails/:Pbarcode', authenticateUser, async (req, res) => {
-    console.log('wtf is going on ';
+    
+    console.log('wtf is going on ', Pbarcode);
     const {Pbarcode} = req.params;
     console.log('barcode', Pbarcode);
     try {
