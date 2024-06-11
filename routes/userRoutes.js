@@ -834,7 +834,61 @@ router.post('/receipts', authenticateUser, async (req, res) => {
     }
 });
 
-
+//_________ fetching receipts
+// Fetch all receipts
+router.get('/receipts', authenticateUser, async (req, res) => {
+    try {
+      const result = await pool.query('SELECT * FROM receipts');
+      res.json({ receipts: result.rows });
+    } catch (error) {
+      console.error('Error fetching receipts:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+  
+  // Fetch all receipts
+router.get('/receipts/all', authenticateUser, async (req, res) => {
+    try {
+      const result = await pool.query('SELECT * FROM receipts');
+      res.json({ receipts: result.rows });
+    } catch (error) {
+      console.error('Error fetching receipts:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+  
+  // Fetch receipts by status
+  router.get('/receipts/status/:status', authenticateUser, async (req, res) => {
+    const { status } = req.params;
+    try {
+      const result = await pool.query('SELECT * FROM receipts WHERE status = $1', [status]);
+      res.json({ receipts: result.rows });
+    } catch (error) {
+      console.error(`Error fetching ${status} receipts:`, error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+  
+  // Fetch receipt details and items
+  router.get('/receipts/:receiptId/items', authenticateUser, async (req, res) => {
+    const { receiptId } = req.params;
+    try {
+      const receiptResult = await pool.query('SELECT * FROM receipts WHERE receipt_id = $1', [receiptId]);
+      const itemsResult = await pool.query('SELECT * FROM receipt_items WHERE receipt_id = $1', [receiptId]);
+  
+      if (receiptResult.rows.length === 0) {
+        return res.status(404).json({ error: 'Receipt not found' });
+      }
+  
+      res.json({
+        receipt: receiptResult.rows[0],
+        items: itemsResult.rows
+      });
+    } catch (error) {
+      console.error('Error fetching receipt details:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
 
 
 
