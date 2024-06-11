@@ -759,6 +759,8 @@ router.post('/receipts', authenticateUser, async (req, res) => {
     const status = 'pending';
 
     try {
+        console.log("Received products list:", products);
+
         // Start a transaction
         await pool.query('BEGIN');
 
@@ -771,13 +773,17 @@ router.post('/receipts', authenticateUser, async (req, res) => {
         const receiptId = receiptResult.rows[0].receipt_id;
 
         // Insert receipt items
-        const insertReceiptItemsQuery = {
-            text: 'INSERT INTO receipt_items (receipt_id, sample_id, quantity) VALUES ($1, $2, $3)',
-            values: [],
-        };
         for (const product of products) {
             const { sample_id, quantity } = product;
-            insertReceiptItemsQuery.values.push([receiptId, sample_id, quantity]);
+
+            if (!sample_id || !quantity) {
+                throw new Error(`Invalid product data: ${JSON.stringify(product)}`);
+            }
+
+            const insertReceiptItemsQuery = {
+                text: 'INSERT INTO receipt_items (receipt_id, sample_id, quantity) VALUES ($1, $2, $3)',
+                values: [receiptId, sample_id, quantity],
+            };
             await pool.query(insertReceiptItemsQuery);
         }
 
@@ -788,9 +794,11 @@ router.post('/receipts', authenticateUser, async (req, res) => {
     } catch (error) {
         // Rollback the transaction in case of error
         await pool.query('ROLLBACK');
-        res.status(500).json({ error: 'Internal server error' });
+        console.error("Error creating receipt:", error);
+        res.status(500).json({ error: 'Internal server error', details: error.message });
     }
 });
+
 
 
 module.exports = { router, authenticateUser, authorizeAdmin }; 
