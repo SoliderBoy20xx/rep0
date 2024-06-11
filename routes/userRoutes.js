@@ -822,4 +822,5 @@ router.post('/receipts', authenticateUser, async (req, res) => {
 
 
 
+
 module.exports = { router, authenticateUser, authorizeAdmin }; 
