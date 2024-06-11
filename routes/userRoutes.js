@@ -858,21 +858,30 @@ router.get('/receipts/all', authenticateUser, async (req, res) => {
   });
   
   // Fetch receipts by status
+  router.get('/receipts/status/:status', authenticateUser, async (req, res) => {
+    const { status } = req.params;
+    try {
+      const result = await pool.query('SELECT * FROM receipts WHERE status = $1', [status]);
+      res.json({ receipts: result.rows });
+    } catch (error) {
+      console.error(`Error fetching ${status} receipts:`, error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+  
+  // Fetch receipt details and items
   router.get('/receipts/:receiptId/items', authenticateUser, async (req, res) => {
     const { receiptId } = req.params;
     try {
       const receiptResult = await pool.query('SELECT * FROM receipts WHERE receipt_id = $1', [receiptId]);
       const itemsResult = await pool.query('SELECT * FROM receipt_items WHERE receipt_id = $1', [receiptId]);
-    
+  
       if (receiptResult.rows.length === 0) {
         return res.status(404).json({ error: 'Receipt not found' });
       }
-    
-      const { receipt_status } = receiptResult.rows[0]; // Assuming status is a column in the receipts table
-    
+      
       res.json({
         receipt: receiptResult.rows[0],
-        status: receipt_status,
         items: itemsResult.rows
       });
     } catch (error) {
@@ -880,7 +889,6 @@ router.get('/receipts/all', authenticateUser, async (req, res) => {
       res.status(500).json({ error: 'Internal server error' });
     }
   });
-  
 
 
 
