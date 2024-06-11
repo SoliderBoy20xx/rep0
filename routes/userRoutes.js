@@ -764,7 +764,7 @@ router.post('/receipts', authenticateUser, async (req, res) => {
 
         // Insert a new receipt
         const insertReceiptQuery = {
-            text: 'INSERT INTO receipts (client_id, status, timestamp) VALUES ($1, $2, $3) RETURNING receipt_id',
+            text: 'INSERT INTO receipts (client_id, status, created_at) VALUES ($1, $2, $3) RETURNING receipt_id',
             values: [clientId, status, timestamp],
         };
         const receiptResult = await pool.query(insertReceiptQuery);
