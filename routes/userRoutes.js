@@ -759,7 +759,9 @@ router.post('/receipts', authenticateUser, async (req, res) => {
     const status = 'pending';
 
     try {
-        console.log("Received products list:", products);
+        // Log the received clientId and products list
+        console.log("Received clientId:", clientId);
+        console.log("Received products list:", JSON.stringify(products, null, 2));
 
         // Start a transaction
         await pool.query('BEGIN');
@@ -772,14 +774,32 @@ router.post('/receipts', authenticateUser, async (req, res) => {
         const receiptResult = await pool.query(insertReceiptQuery);
         const receiptId = receiptResult.rows[0].receipt_id;
 
-        // Insert receipt items
+        // Process each product to insert receipt items
         for (const product of products) {
-            const { sample_id, quantity } = product;
+            const { barcode, quantity } = product;
 
-            if (!sample_id || !quantity) {
+            // Log each product's barcode and quantity
+            console.log("Processing product:", { barcode, quantity });
+
+            // Validate barcode and quantity
+            if (!barcode || !quantity) {
                 throw new Error(`Invalid product data: ${JSON.stringify(product)}`);
             }
 
+            // Get the sample_id based on the sample_barcode
+            const getSampleIdQuery = {
+                text: 'SELECT sample_id FROM samples WHERE sample_barcode = $1',
+                values: [barcode],
+            };
+            const sampleResult = await pool.query(getSampleIdQuery);
+
+            if (sampleResult.rows.length === 0) {
+                throw new Error(`No sample found for sample_barcode: ${barcode}`);
+            }
+
+            const sample_id = sampleResult.rows[0].sample_id;
+
+            // Insert receipt item
             const insertReceiptItemsQuery = {
                 text: 'INSERT INTO receipt_items (receipt_id, sample_id, quantity) VALUES ($1, $2, $3)',
                 values: [receiptId, sample_id, quantity],
@@ -795,7 +815,8 @@ router.post('/receipts', authenticateUser, async (req, res) => {
         // Rollback the transaction in case of error
         await pool.query('ROLLBACK');
         console.error("Error creating receipt:", error);
-        res.status(500).json({ error: 'Internal server error', details: error.message });
+        res.status(500).json({
+ error: 'Internal server error', details: error.message });
     }
 });
 
