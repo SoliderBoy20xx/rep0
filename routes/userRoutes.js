@@ -879,10 +879,12 @@ router.get('/receipts/all', authenticateUser, async (req, res) => {
       if (receiptResult.rows.length === 0) {
         return res.status(404).json({ error: 'Receipt not found' });
       }
-      
+      const { receipt_status } = receiptResult.rows[0];
+
       res.json({
-        receipt: receiptResult.rows[0],
-        items: itemsResult.rows
+      receipt: receiptResult.rows[0],
+      status: receipt_status,
+      items: itemsResult.rows
       });
     } catch (error) {
       console.error('Error fetching receipt details:', error);
