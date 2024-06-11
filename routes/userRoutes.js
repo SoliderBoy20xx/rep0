@@ -726,5 +726,71 @@ router.get('/storagetransactions', authenticateUser, async  (req, res) => {
     }
   });
 
+// routes for version 2 //App modification , delavage --------------> sales
+
+router.get('/clients/:clientBarcode', authenticateUser, async (req, res) => {
+    const clientBarcode = req.params.clientBarcode;
+  
+    try {
+      const query = `
+        SELECT client_id
+        FROM clients
+        WHERE client_barcode = $1;
+      `;
+      const { rows } = await pool.query(query, [clientBarcode]);
+  
+      if (rows.length > 0) {
+        res.status(200).json({ clientId: rows[0].client_id });
+      } else {
+        res.status(404).json({ error: 'Client not found' });
+      }
+    } catch (error) {
+      console.error('Error verifying client:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+//_______so far so good 
+
+// Route to create a new receipt and associated receipt items
+router.post('/receipts', authenticateUser, async (req, res) => {
+    const { clientId, products } = req.body;
+    const timestamp = new Date().toISOString();
+    const status = 'pending';
+
+    try {
+        // Start a transaction
+        await pool.query('BEGIN');
+
+        // Insert a new receipt
+        const insertReceiptQuery = {
+            text: 'INSERT INTO receipts (client_id, status, timestamp) VALUES ($1, $2, $3) RETURNING receipt_id',
+            values: [clientId, status, timestamp],
+        };
+        const receiptResult = await pool.query(insertReceiptQuery);
+        const receiptId = receiptResult.rows[0].receipt_id;
+
+        // Insert receipt items
+        const insertReceiptItemsQuery = {
+            text: 'INSERT INTO receipt_items (receipt_id, sample_id, quantity) VALUES ($1, $2, $3)',
+            values: [],
+        };
+        for (const product of products) {
+            const { sample_id, quantity } = product;
+            insertReceiptItemsQuery.values.push([receiptId, sample_id, quantity]);
+            await pool.query(insertReceiptItemsQuery);
+        }
+
+        // Commit the transaction
+        await pool.query('COMMIT');
+
+        res.status(201).json({ message: 'Receipt created successfully', receiptId });
+    } catch (error) {
+        // Rollback the transaction in case of error
+        await pool.query('ROLLBACK');
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 
 module.exports = { router, authenticateUser, authorizeAdmin }; 
