@@ -764,15 +764,19 @@ router.post('/receipts', authenticateUser, async (req, res) => {
         console.log("Received products list:", JSON.stringify(products, null, 2));
 
         // Start a transaction
+        console.log("Starting transaction...");
         await pool.query('BEGIN');
+        console.log("Transaction started.");
 
         // Insert a new receipt
         const insertReceiptQuery = {
             text: 'INSERT INTO receipts (client_id, status, created_at) VALUES ($1, $2, $3) RETURNING receipt_id',
             values: [clientId, status, timestamp],
         };
+        console.log("Inserting new receipt...");
         const receiptResult = await pool.query(insertReceiptQuery);
         const receiptId = receiptResult.rows[0].receipt_id;
+        console.log("New receipt inserted. Receipt ID:", receiptId);
 
         // Process each product to insert receipt items
         for (const product of products) {
@@ -787,6 +791,7 @@ router.post('/receipts', authenticateUser, async (req, res) => {
             }
 
             // Get the sample_id based on the sample_barcode
+            console.log("Getting sample ID for productBarcode:", productBarcode);
             const getSampleIdQuery = {
                 text: 'SELECT sample_id FROM samples WHERE sample_barcode = $1',
                 values: [productBarcode],
@@ -798,26 +803,39 @@ router.post('/receipts', authenticateUser, async (req, res) => {
             }
 
             const sample_id = sampleResult.rows[0].sample_id;
+            console.log("Sample ID found:", sample_id);
 
             // Insert receipt item
+            console.log("Inserting receipt item for productBarcode:", productBarcode);
             const insertReceiptItemsQuery = {
                 text: 'INSERT INTO receipt_items (receipt_id, sample_id, quantity) VALUES ($1, $2, $3)',
                 values: [receiptId, sample_id, quantity],
             };
             await pool.query(insertReceiptItemsQuery);
+            console.log("Receipt item inserted for productBarcode:", productBarcode);
         }
 
         // Commit the transaction
+        console.log("Committing transaction...");
         await pool.query('COMMIT');
+        console.log("Transaction committed.");
 
+        // Respond with success message
         res.status(201).json({ message: 'Receipt created successfully', receiptId });
     } catch (error) {
         // Rollback the transaction in case of error
-        await pool.query('ROLLBACK');
         console.error("Error creating receipt:", error);
+        console.log("Rolling back transaction...");
+        await pool.query('ROLLBACK');
+        console.log("Transaction rolled back.");
+
+        // Respond with error message
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
+
+
 
 
 
