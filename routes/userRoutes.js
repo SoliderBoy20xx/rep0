@@ -893,7 +893,70 @@ router.get('/receipts/all', authenticateUser, async (req, res) => {
   });
 
 
+// final step
 
+router.put('/receipts/:receiptId/validate', authenticateUser, async (req, res) => {
+    const { receiptId } = req.params;
+  
+    try {
+      // Update receipt status to validated
+      await pool.query('UPDATE receipts SET receipt_status = $1 WHERE receipt_id = $2', ['validated', receiptId]);
+  
+      res.status(200).json({ message: 'Receipt validated successfully' });
+    } catch (error) {
+      console.error('Error validating receipt:', error);
+      res.status(500).json({ error: 'Failed to validate receipt' });
+    }
+  });
+
+  router.post('/unstockReceiptItems', async (req, res) => {
+    const receiptItems = req.body.receiptItems;
+  
+    try {
+      for (const item of receiptItems) {
+        const { sample_id, quantity } = item;
+  
+        // Query to retrieve current quantity in the locker for the specific product
+        const sequenceQuery = {
+          text: `SELECT quantity_in_this_locker
+                 FROM StorageTransactions
+                 WHERE sample_id = $1`,
+          values: [sample_id],
+        };
+  
+        const sequenceResult = await pool.query(sequenceQuery);
+  
+        if (sequenceResult.rows.length === 0) {
+          return res.status(404).json({ error: `Product with sample_id ${sample_id} not found in storage` });
+        }
+  
+        const currentQuantityInLocker = sequenceResult.rows[0].quantity_in_this_locker;
+  
+        if (currentQuantityInLocker < quantity) {
+          return res.status(400).json({ error: `Insufficient quantity in storage for product with sample_id ${sample_id}` });
+        }
+  
+        // Calculate quantity to deduct from the current sequence
+        const quantityToDeduct = Math.min(quantity, currentQuantityInLocker);
+  
+        // Update quantity in locker
+        const updateQuery = {
+          text: `UPDATE StorageTransactions 
+                 SET quantity_in_this_locker = quantity_in_this_locker - $1
+                 WHERE sample_id = $2`,
+          values: [quantityToDeduct, sample_id],
+        };
+  
+        await pool.query(updateQuery);
+      }
+  
+      res.status(200).json({ message: 'Products unstocked successfully' });
+    } catch (error) {
+      console.error('Error unstocking products:', error);
+      res.status(500).json({ error: 'Failed to unstock products' });
+    }
+  });
+  
 
 
 
