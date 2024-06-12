@@ -942,7 +942,8 @@ router.put('/receipts/:receiptId/validate', authenticateUser, async (req, res) =
         // Update quantity in locker
         const updateQuery = {
           text: `UPDATE StorageTransactions 
-                 SET quantity_in_this_locker = quantity_in_this_locker - $1
+                 SET quantity_in_this_locker = quantity_in_this_locker - $1,
+                 total_quantity = total_quantity - $1
                  WHERE sample_id = $2`,
           values: [quantityToDeduct, sample_id],
         };
@@ -967,7 +968,8 @@ router.put('/receipts/:receiptId/validate', authenticateUser, async (req, res) =
         // Query to add quantity back to the storage transactions
         const updateQuery = {
           text: `UPDATE StorageTransactions 
-                 SET quantity_in_this_locker = quantity_in_this_locker + $1
+                 SET quantity_in_this_locker = quantity_in_this_locker + $1,
+                 total_quantity = total_quantity + $1
                  WHERE sample_id = $2`,
           values: [quantity, sample_id],
         };
