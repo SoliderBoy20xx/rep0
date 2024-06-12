@@ -900,7 +900,7 @@ router.put('/receipts/:receiptId/validate', authenticateUser, async (req, res) =
   
     try {
       // Update receipt status to validated
-      await pool.query('UPDATE receipts SET receipt_status = $1 WHERE receipt_id = $2', ['validated', receiptId]);
+      await pool.query('UPDATE receipts SET status = $1 WHERE receipt_id = $2', ['validated', receiptId]);
   
       res.status(200).json({ message: 'Receipt validated successfully' });
     } catch (error) {
