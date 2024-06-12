@@ -956,8 +956,44 @@ router.put('/receipts/:receiptId/validate', authenticateUser, async (req, res) =
       res.status(500).json({ error: 'Failed to unstock products' });
     }
   });
+  //_____________
+  router.post('/stockReceiptItems', authenticateUser, async (req, res) => {
+    const receiptItems = req.body.receiptItems;
   
+    try {
+      for (const item of receiptItems) {
+        const { sample_id, quantity } = item;
+  
+        // Query to add quantity back to the storage transactions
+        const updateQuery = {
+          text: `UPDATE StorageTransactions 
+                 SET quantity_in_this_locker = quantity_in_this_locker + $1
+                 WHERE sample_id = $2`,
+          values: [quantity, sample_id],
+        };
+  
+        await pool.query(updateQuery);
+      }
+  
+      res.status(200).json({ message: 'Products stocked back successfully' });
+    } catch (error) {
+      console.error('Error stocking products:', error);
+      res.status(500).json({ error: 'Failed to stock products' });
+    }
+  });
 
-
+  router.put('/receipts/:receiptId/cancel', authenticateUser, async (req, res) => {
+    const { receiptId } = req.params;
+  
+    try {
+      // Update receipt status to canceled
+      await pool.query('UPDATE receipts SET status = $1 WHERE receipt_id = $2', ['canceled', receiptId]);
+  
+      res.status(200).json({ message: 'Receipt canceled successfully' });
+    } catch (error) {
+      console.error('Error canceling receipt:', error);
+      res.status(500).json({ error: 'Failed to cancel receipt' });
+    }
+  });
 
 module.exports = { router, authenticateUser, authorizeAdmin }; 
