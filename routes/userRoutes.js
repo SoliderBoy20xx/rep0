@@ -987,7 +987,7 @@ router.put('/receipts/:receiptId/validate', authenticateUser, async (req, res) =
   
     try {
       // Update receipt status to canceled
-      await pool.query('UPDATE receipts SET status = $1 WHERE receipt_id = $2', ['canceled', receiptId]);
+      await pool.query('UPDATE receipts SET status = $1 WHERE receipt_id = $2', ['returned', receiptId]);
   
       res.status(200).json({ message: 'Receipt canceled successfully' });
     } catch (error) {
